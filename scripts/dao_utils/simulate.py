@@ -1,7 +1,7 @@
 import ape
-from typing import Dict, List, Tuple
+import pprint
 
-from scripts.dao_utils import stakeholders
+from scripts.dao_utils import CONVEX_VOTERPROXY, CURVE_DEPLOYER_2
 
 
 def simulate(vote_id: int, quorum: int, voting_contract: str):
@@ -12,22 +12,19 @@ def simulate(vote_id: int, quorum: int, voting_contract: str):
         actions (list(tuple)): ("target addr", "fn_name", *args)
         description (str): Description of the on-chain governance proposal
     """
-    top_stakeholders = stakeholders.get_vecrv_holders_data()
-
-    # check if stakeholders meet quorum:
-    assert sum([stakeholder.share * 100 for stakeholder in top_stakeholders]) > quorum
-
+    print("\n# --------- SIMULATE VOTE --------- #")
     # vote
-    aragon = ape.Contract(voting_contract)
-    for stakeholder in top_stakeholders:
-        print(
-            f"simulate vote for: {stakeholder.address} with "
-            f"vote weight share: {stakeholder.share * 100}"
-        )
-        aragon.vote(vote_id, True, False, sender=ape.accounts[stakeholder.address])
+    aragon = ape.project.Voting.at(voting_contract)
+    aragon.vote(vote_id, True, False, sender=ape.accounts[CONVEX_VOTERPROXY])
 
     # sleep for a week so it has time to pass
-    ape.chain.pending_timestamp += 86400 * 7
+    num_blocks = int(aragon.voteTime() + 200 / 10)
+    ape.chain.mine(num_blocks)
+
+    # get vote stats:
+    vote_stats = aragon.getVote(vote_id)
+    pprint.pprint(vote_stats)
 
     # moment of truth - execute the vote!
-    aragon.executeVote(vote_id, sender=ape.accounts[top_stakeholders[0].address])
+    aragon.executeVote(vote_id, sender=ape.accounts[CURVE_DEPLOYER_2])
+    print("# --------- VOTE EXECUTED --------- #\n")

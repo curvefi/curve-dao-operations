@@ -2,10 +2,13 @@ import ape
 import click
 import pprint
 
-from scripts.dao_utils import CURVE_DAO_OWNERSHIP, SMARTWALLET_WHITELIST
+from scripts.dao_utils import (
+    CURVE_DAO_OWNERSHIP,
+    CURVE_DEPLOYER_2,
+    SMARTWALLET_WHITELIST,
+)
 from scripts.dao_utils import make_vote
 from scripts.dao_utils.simulate import simulate
-from scripts.dao_utils.stakeholders import TOP_HOLDERS
 
 
 @click.group(short_help="Smartwallet Checker Admin Control Operations")
@@ -21,8 +24,13 @@ def cli():
     short_help="Whitelist proposed contract to lock veCRV",
 )
 @ape.cli.network_option()
-@click.option("--account", "-a", type=str, default=TOP_HOLDERS[1])
-@click.option("--address_to_whitelist", "-w", type=str, default=TOP_HOLDERS[1])
+@click.option("--account", "-a", type=str, default=CURVE_DEPLOYER_2)
+@click.option(
+    "--address_to_whitelist",
+    "-w",
+    type=str,
+    default="0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86",  # some default address
+)
 @click.option("--description", "-d", type=str, default="test")
 @click.option("--simulate_outcome", "-s", type=bool, default=False)
 def _whitelist(network, account, address_to_whitelist, description, simulate_outcome):

@@ -23,7 +23,7 @@
 # ------- CONSTANTS --------- #
 # addresses related to the DAO - these should not need modification
 
-from .create_vote import make_vote
+from .vote_utils import make_vote
 
 CURVE_DAO_OWNERSHIP = {
     "agent": "0x40907540d8a6c65c637785e8f8b742ae6b0b9968",
@@ -49,3 +49,5 @@ EMERGENCY_DAO = {
 
 veCRV = "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2"
 SMARTWALLET_WHITELIST = "0xca719728Ef172d0961768581fdF35CB116e0B7a4"
+CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
+CURVE_DEPLOYER_2 = "0xbabe61887f1de2713c6f97e567623453d3C79f67"

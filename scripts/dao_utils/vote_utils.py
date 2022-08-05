@@ -4,6 +4,10 @@ import requests
 from eth_abi import encode_abi
 from eth_utils import encode_hex
 from typing import List, Dict, Tuple
+import warnings
+from hexbytes import HexBytes
+
+warnings.filterwarnings("ignore")
 
 
 def encode_fn_inputs(contract: ape.Contract, fn_name: str, args: List):
@@ -71,6 +75,8 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
     evm_script = prepare_evm_script(target, actions)
+    print("decoded vote script:")
+    print(decode_vote(evm_script, target["voting"]))
 
     if target.get("forwarder"):
 
@@ -99,3 +105,27 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
         )
 
     return tx
+
+
+def decode_vote(script: str):
+    script = HexBytes(script)
+    idx = 4
+    while idx < len(script):
+        target = ape.Contract(script[idx : idx + 20])
+        idx += 20
+        length = int(script[idx : idx + 4].hex(), 16)
+        idx += 4
+        calldata = script[idx : idx + length]
+        idx += length
+        fn, inputs = target.decode_input(calldata)
+        if calldata[:4].hex() == "0xb61d27f6":
+            agent_target = ape.Contract(inputs[0])
+            fn, inputs = agent_target.decode_input(inputs[2])
+            print(
+                f"Call via agent ({target}):\n ├─ To: {agent_target}\n"
+                f" ├─ Function: {fn}\n └─ Inputs: {inputs}\n"
+            )
+        else:
+            print(
+                f"Direct call:\n ├─ To: {target}\n ├─ Function: {fn}\n └─ Inputs: {inputs}"
+            )
