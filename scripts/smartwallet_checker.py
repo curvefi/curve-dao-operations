@@ -3,13 +3,13 @@ import ape
 import click
 import pprint
 
-from scripts.dao_utils import (
+from scripts.utils import (
     CURVE_DAO_OWNERSHIP,
     CURVE_DEPLOYER_2,
     SMARTWALLET_WHITELIST,
 )
-from scripts.dao_utils import make_vote
-from scripts.dao_utils.simulate import simulate
+from scripts.utils import make_vote
+from scripts.utils.simulate import simulate
 from rich.console import Console as RichConsole
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)

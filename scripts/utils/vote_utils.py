@@ -6,7 +6,6 @@ import requests
 from eth_abi import decode_abi
 from typing import List, Dict, Tuple
 import warnings
-from hexbytes import HexBytes
 from rich.console import Console as RichConsole
 
 warnings.filterwarnings("ignore")
@@ -96,7 +95,6 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     evm_script = prepare_evm_script(target, actions)
     
     RICH_CONSOLE.log(f"EVM script: {evm_script}")    
-    # RICH_CONSOLE.log(decode_vote(evm_script))
 
     if target.get("forwarder"):
 
@@ -125,90 +123,3 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
         )
 
     return tx
-
-
-def attempt_decode_call_signature(contract: ape.Contract, selector: str):
-
-    # decode method id (or at least try):
-    method = selector.hex()
-    if selector in contract.contract_type.mutable_methods:
-        method = contract.contract_type.mutable_methods[selector]
-        return method.name or f"<{selector}>"
-    elif selector in contract.contract_type.view_methods:
-        method = contract.contract_type.view_methods[selector]
-        return method.name or f"<{selector}>"
-    else:
-        raise
-    
-    
-def decode_input(calldata: str, target: ape.Contract):
-    
-    _ecosystem = ape.networks.ecosystems["ethereum"]
-    selector = calldata[:4]
-    method = attempt_decode_call_signature(target, selector)
-    
-    print(target, method)
-    
-    raw_calldata = calldata[4:]
-    print(target, selector)
-    method_abi = target.contract_type.mutable_methods[selector]
-    
-    input_types = [i.canonical_type for i in method_abi.inputs]  # type: ignore
-    raw_input_values = decode_abi(input_types, raw_calldata)
-    arguments = [
-        _ecosystem.decode_primitive_value(v, ape.utils.abi.parse_type(t))
-        for v, t in zip(raw_input_values, input_types)
-    ]
-    
-    return method, arguments
-
-
-def decode_vote(script: str):
-    
-    RICH_CONSOLE.log("---- DECODING SCRIPT ----")
-    
-    script = HexBytes(script)
-    
-    RICH_CONSOLE.log(f"First four bytes: {script[:4].hex()}")
-    idx = 4   
-    
-    while idx < len(script):
-        
-        # get target contract address:
-        target = ape.Contract(script[idx : idx + 20])
-        RICH_CONSOLE.log(
-            f"Decoding snippet: {script[idx : idx + 20]} "
-            f"-> (target addr) {target.address}"
-        )
-        idx += 20
-        
-        length = int(script[idx : idx + 4].hex(), 16)
-        RICH_CONSOLE.log(
-            f"Decoding Snippet: {script[idx : idx + 4]} "
-            f"-> (length) {length}"
-        )
-        idx += 4
-        
-        # calldata to execute for the dao:
-        calldata = script[idx : idx + length]
-        RICH_CONSOLE.log(
-            f"Decoding Snippet: {script[idx : idx + length]} "
-            f"-> (calldata) {calldata.hex()}"
-        )
-        idx += length
-        
-        # given calldata, get fn name and args:
-        fn, inputs = decode_input(calldata, target)
-        
-        # print decoded vote:
-        if calldata[:4].hex() == "0xb61d27f6":
-            agent_target = ape.Contract(inputs[0])
-            fn, inputs = decode_input(inputs[2], agent_target)
-            RICH_CONSOLE.log(
-                f"Call via agent ({target}):\n ├─ To: {agent_target}\n"
-                f" ├─ Function: {fn}\n └─ Inputs: {inputs}\n"
-            )
-        else:
-            RICH_CONSOLE.log(
-                f"Direct call:\n ├─ To: {target}\n ├─ Function: {fn}\n └─ Inputs: {inputs}"
-            )

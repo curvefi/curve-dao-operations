@@ -2,7 +2,7 @@ import sys
 import ape
 import pprint
 
-from scripts.dao_utils import CONVEX_VOTERPROXY, CURVE_DEPLOYER_2
+from scripts.utils import CONVEX_VOTERPROXY, CURVE_DEPLOYER_2
 from rich.console import Console as RichConsole
 
 
