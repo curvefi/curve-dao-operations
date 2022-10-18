@@ -5,15 +5,11 @@ import ape
 import click
 from rich.console import Console as RichConsole
 
-from scripts.utils import (
-    CURVE_DAO_OWNERSHIP,
-    CURVE_DEPLOYER_2,
-    SMARTWALLET_WHITELIST,
-    make_vote,
-)
+from scripts.utils import CURVE_DEPLOYER_2, make_vote, select_target
 from scripts.utils.simulate import simulate
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
+SMARTWALLET_WHITELIST = "0xca719728Ef172d0961768581fdF35CB116e0B7a4"
 
 
 @click.group(short_help="Smartwallet Checker Admin Control Operations")
@@ -45,8 +41,9 @@ def _whitelist(network, account, address_to_whitelist, description):
     account = ape.accounts[account]
     RICH_CONSOLE.log(f"Proposer: {account}")
 
+    target = select_target("ownership")
     tx = make_vote(
-        vote_type="ownership",
+        target=target,
         actions=[(SMARTWALLET_WHITELIST, "approveWallet", address_to_whitelist)],
         description=description,
         vote_creator=account,
@@ -61,7 +58,7 @@ def _whitelist(network, account, address_to_whitelist, description):
     if network == "ethereum:mainnet-fork":
         simulate(
             vote_id=vote_id,
-            voting_contract=CURVE_DAO_OWNERSHIP["voting"],
+            voting_contract=target["voting"],
         )
 
         # todo: add assertions here:

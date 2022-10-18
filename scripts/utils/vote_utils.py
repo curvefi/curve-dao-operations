@@ -8,8 +8,6 @@ import ape
 import requests
 from rich.console import Console as RichConsole
 
-from scripts.utils import CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAM, EMERGENCY_DAO
-
 warnings.filterwarnings("ignore")
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
@@ -42,20 +40,14 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
         target_fn = getattr(target_contract, fn_name)
         target_contract_calldata = target_fn.as_transaction(*args, sender=agent).data
 
-        RICH_CONSOLE.log(
-            f"Target contract calldata: [blue]{target_contract_calldata.hex()}"
-        )
-
         # build governance agent calldata:
         agent_fn = getattr(agent, "execute")
         agent_calldata = agent_fn.as_transaction(
             address, 0, target_contract_calldata, sender=target["voting"]
         ).data.hex()[2:]
-        RICH_CONSOLE.log(f"Agent calldata: [blue]{agent_calldata}")
 
         # concat into evm script:
         length = hex(len(agent_calldata) // 2)[2:].zfill(8)
-        RICH_CONSOLE.log(f"Script length: [blue]{int(length, 16)}")
 
         evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata}"
 
@@ -77,24 +69,11 @@ def get_vote_description_ipfs_hash(description: str):
     return response.json()["Hash"]
 
 
-def select_target(vote_type: str) -> Dict:
-
-    match vote_type:
-        case "ownership":
-            return CURVE_DAO_OWNERSHIP
-        case "parameter":
-            return CURVE_DAO_PARAM
-        case "emergency":
-            return EMERGENCY_DAO
-
-
-def make_vote(
-    vote_type: str, actions: List[Tuple], description: str, vote_creator: str
-):
+def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator: str):
     """Prepares EVM script and creates an on-chain AragonDAO vote.
 
     Args:
-        vote_type (str): ownership / parameter / emergency
+        target (dict): ownership / parameter / emergency
         actions (list(tuple)): ("target addr", "fn_name", *args)
         vote_creator (str): msg.sender address
         description (str): Description of the on-chain governance proposal
@@ -102,7 +81,6 @@ def make_vote(
     Returns:
         str: vote ID of the created vote.
     """
-    target = select_target(vote_type)
     aragon = ape.project.Voting.at(target["voting"])
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
@@ -110,10 +88,9 @@ def make_vote(
 
     RICH_CONSOLE.log(f"EVM script: {evm_script}")
 
+    # the emergency DAO only allows new votes via a forwarder contract
+    # so we have to wrap the call in another layer of evm script
     if target.get("forwarder"):
-
-        # the emergency DAO only allows new votes via a forwarder contract
-        # so we have to wrap the call in another layer of evm script
 
         vote_calldata = aragon.newVote.encode_input(
             evm_script, description, False, False
@@ -127,7 +104,6 @@ def make_vote(
 
     else:
 
-        RICH_CONSOLE.log("Generated calldata: ", evm_script, "\n")
         tx = aragon.newVote(
             evm_script,
             f"ipfs:{get_vote_description_ipfs_hash(description)}",
