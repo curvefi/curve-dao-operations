@@ -25,15 +25,18 @@ def cli():
     short_help="Whitelist proposed contract to lock veCRV",
 )
 @ape.cli.network_option()
-@click.option("--account", "-a", type=str, default=CURVE_DEPLOYER_2)
+@ape.cli.account_option()
 @click.option(
-    "--address_to_whitelist",
+    "--address",
     "-w",
     type=str,
     default="0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86",  # some default address
 )
 @click.option("--description", "-d", type=str, default="test")
-def _whitelist(network, account, address_to_whitelist, description):
+def whitelist(network, account, address_to_whitelist, description):
+
+    if network == "ethereum:mainnet-fork":
+        account = ape.accounts[CURVE_DEPLOYER_2]
 
     RICH_CONSOLE.log(f"Connected to {network}")
     RICH_CONSOLE.log(f"Creating vote to whitelist: {address_to_whitelist}")

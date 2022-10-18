@@ -26,14 +26,33 @@ def get_evm_script(vote_id: str) -> str:
 
             aragon = ape.project.Voting.at(voting_contract)
             proposal_data = aragon.getVote(vote_id)
-            RICH_CONSOLE.log(f"Voting contract: {voting_contract} ({name})")
+            proposal_voting_contract = voting_contract
+            name_voting_contract = name
             evm_script = proposal_data["script"]
 
         except Exception:
 
             continue
 
+    RICH_CONSOLE.log(
+        f"Voting contract: {proposal_voting_contract} " f"({name_voting_contract})"
+    )
     return evm_script
+
+
+def format_fn_inputs(abi, inputs):
+
+    if len(inputs) == 1:
+        argname = abi.inputs[0].name
+        return f"    └─ [bold]{argname}[/]: [yellow]{inputs[-1]}[/]"
+
+    formatted_args = ""
+    for i in range(len(inputs) - 1):
+        argname = abi.inputs[i].name
+        formatted_args += f"    ├─ [bold]{argname}[/]: [yellow]{inputs[i]}[/]\n"
+    argname = abi.inputs[-1].name
+    formatted_args += f"    └─ [bold]{argname}[/]: [yellow]{inputs[-1]}[/]"
+    return formatted_args
 
 
 @click.group(
@@ -76,21 +95,26 @@ def decode_vote(network, vote_id: int):
         calldata = script[idx : idx + length]
         idx += length
 
-        _, inputs = decode_input(target, calldata)
+        fn, inputs = decode_input(target, calldata)
 
         # print decoded vote:
         if calldata[:4].hex() == "0xb61d27f6":
 
             agent_target = ape.Contract(inputs[0])
             fn, inputs = decode_input(agent_target, inputs[2])
+            formatted_inputs = format_fn_inputs(fn, inputs)
             RICH_CONSOLE.log(
-                f"Call via agent ({target}):\n ├─ To: {agent_target}\n"
-                f" ├─ Function: {fn}\n └─ Inputs: {inputs}\n"
+                f"Call via agent: [yellow]{target}[/]\n"
+                f" ├─ [bold]To[/]: [green]{agent_target}[/]\n"
+                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
+                f" └─ [bold]Inputs[/]: \n{formatted_inputs}\n"
             )
+
         else:
 
-            fn, inputs = decode_input(target, calldata)
             RICH_CONSOLE.log(
-                f"Direct call:\n ├─ To: {target}\n ├─ Function: {fn}\n "
-                f"└─ Inputs: {inputs}"
+                f"Direct call\n "
+                f" ├─ [bold]To[/]: [green]{target}[/]\n"
+                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
+                f" └─ [bold]Inputs[/]: {inputs}\n"
             )

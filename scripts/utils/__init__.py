@@ -1,4 +1,4 @@
-from .constants import CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAM, EMERGENCY_DAO
+from .constants import *  # noqa
 from .vote_utils import make_vote  # noqa
 
 

@@ -15,7 +15,7 @@ repos:
     rev: 3.9.2
     hooks:
       - id: flake8
-        args: ["-j8", "--ignore=E203,E501,P103,W503"]
+        args: ["-j8", "--ignore=E203,E501,P103,W503,F405"]
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v5.10.1
     hooks:
