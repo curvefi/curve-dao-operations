@@ -1,3 +1,4 @@
+import sys
 import ape
 import click
 import pprint
@@ -9,6 +10,9 @@ from scripts.dao_utils import (
 )
 from scripts.dao_utils import make_vote
 from scripts.dao_utils.simulate import simulate
+from rich.console import Console as RichConsole
+
+RICH_CONSOLE = RichConsole(file=sys.stdout)
 
 
 @click.group(short_help="Smartwallet Checker Admin Control Operations")
@@ -32,14 +36,13 @@ def cli():
     default="0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86",  # some default address
 )
 @click.option("--description", "-d", type=str, default="test")
-@click.option("--simulate_outcome", "-s", type=bool, default=False)
-def _whitelist(network, account, address_to_whitelist, description, simulate_outcome):
+def _whitelist(network, account, address_to_whitelist, description):
 
-    click.echo(f"Connected to {network}")
-    click.echo(f"Creating vote to whitelist: {address_to_whitelist}")
+    RICH_CONSOLE.log(f"Connected to {network}")
+    RICH_CONSOLE.log(f"Creating vote to whitelist: {address_to_whitelist}")
 
     account = ape.accounts[account]
-    click.echo(f"Proposer: {account}")
+    RICH_CONSOLE.log(f"Proposer: {account}")
 
     tx = make_vote(
         target=CURVE_DAO_OWNERSHIP,
@@ -49,21 +52,20 @@ def _whitelist(network, account, address_to_whitelist, description, simulate_out
     )
 
     for log in tx.decode_logs():
-        vote_id = log.__dict__["event_arguments"]["voteId"]
+        vote_id = log.event_arguments["voteId"]
         break
 
-    click.echo(f"Proposal submitted successfully! VoteId: {vote_id}")
+    RICH_CONSOLE.log(f"Proposal submitted successfully! VoteId: {vote_id}")
 
-    if simulate_outcome and "mainnet-fork" in network:
-        click.echo("Simulating vote outcome...")
+    if network == "ethereum:mainnet-fork":
         simulate(
             vote_id=vote_id,
-            quorum=CURVE_DAO_OWNERSHIP["quorum"],
             voting_contract=CURVE_DAO_OWNERSHIP["voting"],
         )
 
         # todo: add assertions here:
 
-        click.echo("vote passed!")
+        RICH_CONSOLE.log("vote passed!")
 
-    pprint.pprint(tx.__dict__)
+    RICH_CONSOLE.log(pprint.pformat(tx, indent=4))
+    
