@@ -1,12 +1,14 @@
+import json
 import os
 import sys
-import ape
-import json
-import requests
-from eth_abi import decode_abi
-from typing import List, Dict, Tuple
 import warnings
+from typing import Dict, List, Tuple
+
+import ape
+import requests
 from rich.console import Console as RichConsole
+
+from scripts.utils import CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAM, EMERGENCY_DAO
 
 warnings.filterwarnings("ignore")
 
@@ -18,7 +20,7 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     """Generates EVM script to be executed by AragonDAO contracts.
 
     Args:
-        target (dict): one of either CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAMS or EMERGENCY_DAO
+        target (dict): CURVE_DAO_OWNERSHIP / CURVE_DAO_PARAMS / EMERGENCY_DAO
         actions (list(tuple)): ("target addr", "fn_name", *args)
 
     Returns:
@@ -26,7 +28,7 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     """
     agent = ape.Contract(target["agent"])
     voting = target["voting"]
-    
+
     RICH_CONSOLE.log(f"Agent Contract: [yellow]{agent.address}")
     RICH_CONSOLE.log(f"Voting Contract: [yellow]{voting}")
 
@@ -38,11 +40,11 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
         target_contract = ape.Contract(address)
         RICH_CONSOLE.log(f"Target Contract [green]: {target_contract.address}")
         target_fn = getattr(target_contract, fn_name)
-        target_contract_calldata = target_fn.as_transaction(
-            *args, sender=agent
-        ).data
-        
-        RICH_CONSOLE.log(f"Target contract calldata: [blue]{target_contract_calldata.hex()}")
+        target_contract_calldata = target_fn.as_transaction(*args, sender=agent).data
+
+        RICH_CONSOLE.log(
+            f"Target contract calldata: [blue]{target_contract_calldata.hex()}"
+        )
 
         # build governance agent calldata:
         agent_fn = getattr(agent, "execute")
@@ -54,7 +56,7 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
         # concat into evm script:
         length = hex(len(agent_calldata) // 2)[2:].zfill(8)
         RICH_CONSOLE.log(f"Script length: [blue]{int(length, 16)}")
-        
+
         evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata}"
 
     return evm_script
@@ -62,26 +64,37 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
 
 def get_vote_description_ipfs_hash(description: str):
     """Uploads vote description to IPFS and returns the IPFS hash.
-    
+
     NOTE: needs environment variables for infura IPFS access. Please
     set up an IPFS project to generate project id and project secret!
     """
     text = json.dumps({"text": description})
     response = requests.post(
-        "https://ipfs.infura.io:5001/api/v0/add", 
+        "https://ipfs.infura.io:5001/api/v0/add",
         files={"file": text},
         auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
     )
     return response.json()["Hash"]
 
 
-def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator: str):
+def select_target(vote_type: str) -> Dict:
+
+    match vote_type:
+        case "ownership":
+            return CURVE_DAO_OWNERSHIP
+        case "parameter":
+            return CURVE_DAO_PARAM
+        case "emergency":
+            return EMERGENCY_DAO
+
+
+def make_vote(
+    vote_type: str, actions: List[Tuple], description: str, vote_creator: str
+):
     """Prepares EVM script and creates an on-chain AragonDAO vote.
 
-    Note: this script can be used to deploy on-chain governance proposals as well.
-
     Args:
-        target (dict): one of either CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAMS or EMERGENCY_DAO
+        vote_type (str): ownership / parameter / emergency
         actions (list(tuple)): ("target addr", "fn_name", *args)
         vote_creator (str): msg.sender address
         description (str): Description of the on-chain governance proposal
@@ -89,12 +102,13 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     Returns:
         str: vote ID of the created vote.
     """
+    target = select_target(vote_type)
     aragon = ape.project.Voting.at(target["voting"])
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
     evm_script = prepare_evm_script(target, actions)
-    
-    RICH_CONSOLE.log(f"EVM script: {evm_script}")    
+
+    RICH_CONSOLE.log(f"EVM script: {evm_script}")
 
     if target.get("forwarder"):
 

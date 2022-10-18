@@ -1,20 +1,17 @@
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import ape
-from ape.utils.abi import Struct, parse_type
-from ape.utils import is_array
 from ape.exceptions import DecodingError
-from eth_abi.exceptions import InsufficientDataBytes
+from ape.utils.abi import Struct
 from eth_abi import decode_abi
+from eth_abi.exceptions import InsufficientDataBytes
+from eth_hash.auto import keccak
 from eth_utils import humanize_hash, is_hex_address, to_checksum_address
 from ethpm_types import HexBytes
 from ethpm_types.abi import MethodABI
-from eth_hash.auto import keccak
-from hexbytes import HexBytes
-from typing import Any, Dict, List, Optional, Tuple, Union
-
 
 
 def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> List:
-    """Converts a list of parameters from an ABI into a list of type strings."""
     types_list = []
     if substitutions is None:
         substitutions = {}
@@ -42,7 +39,7 @@ def build_function_signature(abi: Dict) -> str:
 def build_function_selector(abi: Dict) -> str:
     sig = build_function_signature(abi)
     return "0x" + keccak(sig.encode()).hex()[:8]
-    
+
 
 def decode_address(raw_address):
     if isinstance(raw_address, int):
@@ -79,13 +76,11 @@ def decode_value(value):
         return decoded_values
 
     elif isinstance(value, Struct):
-        decoded_values = {
-            k: decode_value(v) for k, v in value.items()
-        }
+        decoded_values = {k: decode_value(v) for k, v in value.items()}
         return decoded_values
 
     return value
-    
+
 
 def decode_calldata(
     method: MethodABI,
@@ -94,19 +89,21 @@ def decode_calldata(
     input_types = [i.canonical_type for i in method.inputs]  # type: ignore
 
     try:
-        
+
         raw_input_values = decode_abi(input_types, raw_data)
         input_values = [decode_value(v) for v in raw_input_values]
-        
+
     except (DecodingError, InsufficientDataBytes):
-        
+
         input_values = ["<?>" for _ in input_types]
 
     return input_values
 
 
-def decode_input(contract: ape.Contract, calldata: Union[str, bytes]) -> Tuple[str, Any]:
-    
+def decode_input(
+    contract: ape.Contract, calldata: Union[str, bytes]
+) -> Tuple[str, Any]:
+
     if not isinstance(calldata, HexBytes):
         calldata = HexBytes(calldata)
 
@@ -119,7 +116,7 @@ def decode_input(contract: ape.Contract, calldata: Union[str, bytes]) -> Tuple[s
         ),
         None,
     )
-    
+
     if abi is None:
         raise ValueError("Four byte selector does not match the ABI for this contract")
 

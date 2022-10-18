@@ -1,16 +1,13 @@
+import pprint
 import sys
+
 import ape
 import click
-import pprint
-
-from scripts.utils import (
-    CURVE_DAO_OWNERSHIP,
-    CURVE_DEPLOYER_2,
-    SMARTWALLET_WHITELIST,
-)
-from scripts.utils import make_vote
-from scripts.utils.simulate import simulate
 from rich.console import Console as RichConsole
+
+from scripts.utils import (CURVE_DAO_OWNERSHIP, CURVE_DEPLOYER_2,
+                           SMARTWALLET_WHITELIST, make_vote)
+from scripts.utils.simulate import simulate
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
 
@@ -45,7 +42,7 @@ def _whitelist(network, account, address_to_whitelist, description):
     RICH_CONSOLE.log(f"Proposer: {account}")
 
     tx = make_vote(
-        target=CURVE_DAO_OWNERSHIP,
+        vote_type="ownership",
         actions=[(SMARTWALLET_WHITELIST, "approveWallet", address_to_whitelist)],
         description=description,
         vote_creator=account,
@@ -68,4 +65,3 @@ def _whitelist(network, account, address_to_whitelist, description):
         RICH_CONSOLE.log("vote passed!")
 
     RICH_CONSOLE.log(pprint.pformat(tx, indent=4))
-    

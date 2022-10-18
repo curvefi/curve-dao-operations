@@ -1,28 +1,3 @@
-# these utility scripts are used to prepare, simulate and broadcast votes within Curve's DAO
-# modify the constants below according the the comments, and then use `simulate` in
-# a forked mainnet to verify the result of the vote prior to broadcasting on mainnet
-#
-# NOMENCLATURE:
-#
-# target: the intended target of the vote, should be one of the above constant dicts
-# sender: address to create the vote from - you will need to modify this prior to mainnet use
-# action: a list of calls to perform in the vote, formatted as a lsit of tuples
-#         in the format (target, function name, *input args).
-#         for example, to call:
-#         GaugeController("0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB").add_gauge("0xFA712...", 0, 0)
-#
-#         use the following:
-#         [("0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB", "add_gauge", "0xFA712...", 0, 0),]
-#
-#         commonly used addresses:
-#         GaugeController - 0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB
-#         GaugeProxy - 0x519AFB566c05E00cfB9af73496D00217A630e4D5
-#         PoolProxy - 0xeCb456EA5365865EbAb8a2661B0c503410e9B347
-# description: description of the vote, will be pinned to IPFS
-
-# ------- CONSTANTS --------- #
-# addresses related to the DAO - these should not need modification
-
 from .vote_utils import make_vote
 
 CURVE_DAO_OWNERSHIP = {
@@ -51,3 +26,8 @@ veCRV = "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2"
 SMARTWALLET_WHITELIST = "0xca719728Ef172d0961768581fdF35CB116e0B7a4"
 CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
 CURVE_DEPLOYER_2 = "0xbabe61887f1de2713c6f97e567623453d3C79f67"
+
+
+__all__ = [
+    "make_vote",
+]
