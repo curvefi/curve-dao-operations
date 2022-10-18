@@ -20,6 +20,7 @@ repos:
     rev: v5.10.1
     hooks:
       - id: isort
+        args: ["--profile", "black"] # solves conflicts between black and isort
 
 default_language_version:
   python: python3.10

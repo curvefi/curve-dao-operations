@@ -5,8 +5,12 @@ import ape
 import click
 from rich.console import Console as RichConsole
 
-from scripts.utils import (CURVE_DAO_OWNERSHIP, CURVE_DEPLOYER_2,
-                           SMARTWALLET_WHITELIST, make_vote)
+from scripts.utils import (
+    CURVE_DAO_OWNERSHIP,
+    CURVE_DEPLOYER_2,
+    SMARTWALLET_WHITELIST,
+    make_vote,
+)
 from scripts.utils.simulate import simulate
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
