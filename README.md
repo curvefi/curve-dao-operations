@@ -105,6 +105,15 @@ Call via agent: 0x40907540d8a6C65c637785e8f8B742ae6b0b9968
 
 The goal is to cover all DAO operations in CLI tools. All utility scripts go to: `scripts/utils`, and all CLI tools are stored in the `scripts` folder.
 
+## Pre-commit
+
+For linting, the repo uses pre-commit hooks. Please install and use them via:
+
+```
+> pre-commit install
+> pre-commit run --all-files
+```
+
 In order to contribute, please fork off of the `main` branch and make your changes there. Your commit messages should detail why you made your change in addition to what you did (unless it is a tiny change).
 
 If you need to pull in any changes from `main` after making your fork (for example, to resolve potential merge conflicts), please avoid using `git merge` and instead, `git rebase` your branch
