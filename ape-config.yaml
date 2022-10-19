@@ -1,14 +1,19 @@
 name: curve-dao-operations
 
 plugins:
+  - name: vyper
   - name: alchemy
-  - name: solidity
   - name: hardhat
+  - name: ledger
+  - name: etherscan
 
 ethereum:
   default_network: mainnet-fork
   mainnet_fork:
     default_provider: hardhat
+    transaction_acceptance_timeout: 99999999
+  mainnet:
+    transaction_acceptance_timeout: 99999999
 
 hardhat:
   port: auto

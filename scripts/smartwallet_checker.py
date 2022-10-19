@@ -1,14 +1,15 @@
+import pprint
+import sys
+
 import ape
 import click
-import pprint
+from rich.console import Console as RichConsole
 
-from scripts.dao_utils import (
-    CURVE_DAO_OWNERSHIP,
-    CURVE_DEPLOYER_2,
-    SMARTWALLET_WHITELIST,
-)
-from scripts.dao_utils import make_vote
-from scripts.dao_utils.simulate import simulate
+from scripts.utils import CURVE_DEPLOYER_2, make_vote, select_target
+from scripts.utils.simulate import simulate
+
+RICH_CONSOLE = RichConsole(file=sys.stdout)
+SMARTWALLET_WHITELIST = "0xca719728Ef172d0961768581fdF35CB116e0B7a4"
 
 
 @click.group(short_help="Smartwallet Checker Admin Control Operations")
@@ -24,46 +25,47 @@ def cli():
     short_help="Whitelist proposed contract to lock veCRV",
 )
 @ape.cli.network_option()
-@click.option("--account", "-a", type=str, default=CURVE_DEPLOYER_2)
+@ape.cli.account_option()
 @click.option(
-    "--address_to_whitelist",
+    "--address",
     "-w",
     type=str,
     default="0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86",  # some default address
 )
 @click.option("--description", "-d", type=str, default="test")
-@click.option("--simulate_outcome", "-s", type=bool, default=False)
-def _whitelist(network, account, address_to_whitelist, description, simulate_outcome):
+def whitelist(network, account, address_to_whitelist, description):
 
-    click.echo(f"Connected to {network}")
-    click.echo(f"Creating vote to whitelist: {address_to_whitelist}")
+    if network == "ethereum:mainnet-fork":
+        account = ape.accounts[CURVE_DEPLOYER_2]
+
+    RICH_CONSOLE.log(f"Connected to {network}")
+    RICH_CONSOLE.log(f"Creating vote to whitelist: {address_to_whitelist}")
 
     account = ape.accounts[account]
-    click.echo(f"Proposer: {account}")
+    RICH_CONSOLE.log(f"Proposer: {account}")
 
+    target = select_target("ownership")
     tx = make_vote(
-        target=CURVE_DAO_OWNERSHIP,
+        target=target,
         actions=[(SMARTWALLET_WHITELIST, "approveWallet", address_to_whitelist)],
         description=description,
         vote_creator=account,
     )
 
     for log in tx.decode_logs():
-        vote_id = log.__dict__["event_arguments"]["voteId"]
+        vote_id = log.event_arguments["voteId"]
         break
 
-    click.echo(f"Proposal submitted successfully! VoteId: {vote_id}")
+    RICH_CONSOLE.log(f"Proposal submitted successfully! VoteId: {vote_id}")
 
-    if simulate_outcome and "mainnet-fork" in network:
-        click.echo("Simulating vote outcome...")
+    if network == "ethereum:mainnet-fork":
         simulate(
             vote_id=vote_id,
-            quorum=CURVE_DAO_OWNERSHIP["quorum"],
-            voting_contract=CURVE_DAO_OWNERSHIP["voting"],
+            voting_contract=target["voting"],
         )
 
         # todo: add assertions here:
 
-        click.echo("vote passed!")
+        RICH_CONSOLE.log("vote passed!")
 
-    pprint.pprint(tx.__dict__)
+    RICH_CONSOLE.log(pprint.pformat(tx, indent=4))
