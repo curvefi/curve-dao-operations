@@ -56,10 +56,10 @@ The following is sufficient for installing all the dependencies (except one):
 > pip install -r ./requirements.txt
 ```
 
-The `ape-hardhat` plugin also requires `hardhat`, which can be installed via npm:
+The `ape-hardhat` plugin also requires `hardhat`, which should be npm installed using the `package-lock.json`:
 
 ```
-npm install --save-dev hardhat
+npm install
 ```
 
 
