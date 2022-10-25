@@ -47,7 +47,7 @@ geth:
 
 ## Installing the tool
 
-Since everything is written in python and ape, the following should be sufficient:
+The following is sufficient for installing all the dependencies (except one):
 
 ```
 > python -m venv venv
@@ -55,6 +55,13 @@ Since everything is written in python and ape, the following should be sufficien
 > pip install --upgrade pip
 > pip install -r ./requirements.txt
 ```
+
+The `ape-hardhat` plugin also requires `hardhat`, which should be npm installed using the `package-lock.json`:
+
+```
+npm install
+```
+
 
 # Available tools
 
@@ -71,7 +78,7 @@ Input args:
 An example of its usage is show in the following:
 
 ```
-% ape run decode_executable decode --vote_id 223
+% ape run decode_executable decode --vote_id 223 --target ownership
 ```
 
 Output:
