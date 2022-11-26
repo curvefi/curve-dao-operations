@@ -4,7 +4,7 @@ import sys
 import ape
 from rich.console import Console as RichConsole
 
-from curve_dao import CONVEX_VOTERPROXY, CURVE_DEPLOYER_2
+from curve_dao import CONVEX_VOTERPROXY
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
 
@@ -35,6 +35,6 @@ def simulate(vote_id: int, voting_contract: str):
 
     # moment of truth - execute the vote!
     RICH_CONSOLE.log("Simulate proposal execution")
-    enacter = ape.accounts[CURVE_DEPLOYER_2]
+    enacter = ape.accounts[CONVEX_VOTERPROXY]
     aragon.executeVote(vote_id, sender=enacter)
     RICH_CONSOLE.log("[green] Vote Executed!")
