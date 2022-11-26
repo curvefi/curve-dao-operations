@@ -34,22 +34,14 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
 
     for address, fn_name, *args in actions:
 
-        # build target contract calldata:
-        target_contract = ape.Contract(address)
-        RICH_CONSOLE.log(f"Target Contract [green]: {target_contract.address}")
-        target_fn = getattr(target_contract, fn_name)
-        target_contract_calldata = target_fn.as_transaction(*args, sender=agent).data
-
-        # build governance agent calldata:
-        agent_fn = getattr(agent, "execute")
-        agent_calldata = agent_fn.as_transaction(
-            address, 0, target_contract_calldata, sender=target["voting"]
-        ).data.hex()[2:]
-
-        # concat into evm script:
-        length = hex(len(agent_calldata) // 2)[2:].zfill(8)
-
-        evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata}"
+        contract = ape.Contract(address)
+        fn = getattr(contract, fn_name)
+        calldata = fn.as_transaction(*args, sender=agent).data
+        agent_calldata = agent.execute.as_transaction(
+            address, 0, calldata, sender=voting
+        ).data
+        length = hex(len(agent_calldata.hex()) // 2)[2:].zfill(8)
+        evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata.hex()}"
 
     return evm_script
 
@@ -85,31 +77,14 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
     evm_script = prepare_evm_script(target, actions)
-
     RICH_CONSOLE.log(f"EVM script: {evm_script}")
 
-    # the emergency DAO only allows new votes via a forwarder contract
-    # so we have to wrap the call in another layer of evm script
-    if target.get("forwarder"):
-
-        vote_calldata = aragon.newVote.encode_input(
-            evm_script, description, False, False
-        )[2:]
-        length = hex(len(vote_calldata) // 2)[2:].zfill(8)
-        evm_script = f"0x00000001{aragon.address[2:]}{length}{vote_calldata}"
-
-        # send tx via forwarder
-        forwarder = ape.project.TokenManager.at(target["forwarder"])
-        tx = forwarder.forward(evm_script, sender=vote_creator)
-
-    else:
-
-        tx = aragon.newVote(
-            evm_script,
-            f"ipfs:{get_vote_description_ipfs_hash(description)}",
-            False,
-            False,
-            sender=vote_creator,
-        )
+    tx = aragon.newVote(
+        evm_script,
+        f"ipfs:{get_vote_description_ipfs_hash(description)}",
+        False,
+        False,
+        sender=vote_creator,
+    )
 
     return tx

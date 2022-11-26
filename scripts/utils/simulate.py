@@ -36,17 +36,5 @@ def simulate(vote_id: int, voting_contract: str):
     # moment of truth - execute the vote!
     RICH_CONSOLE.log("Simulate proposal execution")
     enacter = ape.accounts[CURVE_DEPLOYER_2]
-    tx = aragon.executeVote.as_transaction(
-        vote_id,
-        sender=enacter,
-        gas_limit=10000000,
-    )
-
-    receipt = enacter.call(tx)
-
-    if receipt.failed:
-        RICH_CONSOLE.log("[red] Proposal execution failed. Tx trace:[/red]")
-        RICH_CONSOLE.log(pprint.pprint(receipt, indent=4))
-
-    else:
-        RICH_CONSOLE.log("[green] Vote Executed.")
+    aragon.executeVote(vote_id, sender=enacter)
+    RICH_CONSOLE.log("[green] Vote Executed!")

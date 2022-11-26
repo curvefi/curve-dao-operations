@@ -1,4 +1,3 @@
-import pprint
 import sys
 
 import ape
@@ -40,8 +39,6 @@ def whitelist(network, account, address, description):
 
     RICH_CONSOLE.log(f"Connected to {network}")
     RICH_CONSOLE.log(f"Creating vote to whitelist: {address}")
-
-    account = ape.accounts[account]
     RICH_CONSOLE.log(f"Proposer: {account}")
 
     target = select_target("ownership")
@@ -64,8 +61,6 @@ def whitelist(network, account, address, description):
             voting_contract=target["voting"],
         )
 
-        # todo: add assertions here:
-
-        RICH_CONSOLE.log("vote passed!")
-
-    RICH_CONSOLE.log(pprint.pformat(tx, indent=4))
+        checker = ape.Contract(SMARTWALLET_WHITELIST)
+        assert checker.check(address)
+        RICH_CONSOLE.log("Correct execution.")
