@@ -4,7 +4,7 @@ import sys
 import ape
 from rich.console import Console as RichConsole
 
-from scripts.utils import CONVEX_VOTERPROXY, CURVE_DEPLOYER_2
+from curve_dao import CONVEX_VOTERPROXY, CURVE_DEPLOYER_2
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
 

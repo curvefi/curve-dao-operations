@@ -4,11 +4,10 @@ import ape
 import click
 from rich.console import Console as RichConsole
 
-from scripts.utils import CURVE_DEPLOYER_2, make_vote, select_target
-from scripts.utils.simulate import simulate
+from curve_dao import CURVE_DEPLOYER_2, make_vote, select_target
+from curve_dao.modules.smartwallet_checker import whitelist_vecrv_lock
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
-SMARTWALLET_WHITELIST = "0xca719728Ef172d0961768581fdF35CB116e0B7a4"
 
 
 @click.group(short_help="Smartwallet Checker Admin Control Operations")
@@ -38,13 +37,12 @@ def whitelist(network, account, address, description):
         account = ape.accounts[CURVE_DEPLOYER_2]
 
     RICH_CONSOLE.log(f"Connected to {network}")
-    RICH_CONSOLE.log(f"Creating vote to whitelist: {address}")
-    RICH_CONSOLE.log(f"Proposer: {account}")
+    RICH_CONSOLE.log(f"Creating vote. Proposer: {account}")
 
     target = select_target("ownership")
     tx = make_vote(
         target=target,
-        actions=[(SMARTWALLET_WHITELIST, "approveWallet", address)],
+        actions=[whitelist_vecrv_lock(address)],
         description=description,
         vote_creator=account,
     )
@@ -54,13 +52,3 @@ def whitelist(network, account, address, description):
         break
 
     RICH_CONSOLE.log(f"Proposal submitted successfully! VoteId: {vote_id}")
-
-    if network == "ethereum:mainnet-fork":
-        simulate(
-            vote_id=vote_id,
-            voting_contract=target["voting"],
-        )
-
-        checker = ape.Contract(SMARTWALLET_WHITELIST)
-        assert checker.check(address)
-        RICH_CONSOLE.log("Correct execution.")

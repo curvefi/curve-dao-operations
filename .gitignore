@@ -7,4 +7,4 @@ __pycache__/
 .DS_Store
 venv/
 .vscode/
-untracked/
+curve_dao.egg-info/
