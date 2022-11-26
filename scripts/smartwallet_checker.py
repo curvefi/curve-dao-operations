@@ -33,13 +33,13 @@ def cli():
     default="0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86",  # some default address
 )
 @click.option("--description", "-d", type=str, default="test")
-def whitelist(network, account, address_to_whitelist, description):
+def whitelist(network, account, address, description):
 
     if network == "ethereum:mainnet-fork":
         account = ape.accounts[CURVE_DEPLOYER_2]
 
     RICH_CONSOLE.log(f"Connected to {network}")
-    RICH_CONSOLE.log(f"Creating vote to whitelist: {address_to_whitelist}")
+    RICH_CONSOLE.log(f"Creating vote to whitelist: {address}")
 
     account = ape.accounts[account]
     RICH_CONSOLE.log(f"Proposer: {account}")
@@ -47,7 +47,7 @@ def whitelist(network, account, address_to_whitelist, description):
     target = select_target("ownership")
     tx = make_vote(
         target=target,
-        actions=[(SMARTWALLET_WHITELIST, "approveWallet", address_to_whitelist)],
+        actions=[(SMARTWALLET_WHITELIST, "approveWallet", address)],
         description=description,
         vote_creator=account,
     )
