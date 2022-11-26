@@ -17,27 +17,8 @@ DAO_VOTING_CONTRACTS = {
 }
 
 
-def get_evm_script(vote_id: str) -> str:
-
-    evm_script = ""
-    for name, voting_contract in DAO_VOTING_CONTRACTS.items():
-
-        try:
-
-            aragon = ape.project.Voting.at(voting_contract)
-            proposal_data = aragon.getVote(vote_id)
-            proposal_voting_contract = voting_contract
-            name_voting_contract = name
-            evm_script = proposal_data["script"]
-
-        except Exception:
-
-            continue
-
-    RICH_CONSOLE.log(
-        f"Voting contract: {proposal_voting_contract} " f"({name_voting_contract})"
-    )
-    return evm_script
+def get_evm_script(vote_id: str, voting_contract: str) -> str:
+    return ape.project.Voting.at(voting_contract).getVote(vote_id)["script"]
 
 
 def format_fn_inputs(abi, inputs):
@@ -70,13 +51,19 @@ def cli():
     short_help="Decode Curve DAO proposal by Vote ID",
 )
 @ape.cli.network_option()
+@click.option(
+    "--target",
+    "-t",
+    type=click.Choice(["ownership", "parameter"]),
+    required=True,
+)
 @click.option("--vote_id", "-v", type=int, default=0)
-def decode_vote(network, vote_id: int):
+def decode_vote(network, target: str, vote_id: int):
 
-    RICH_CONSOLE.log(f"Decoding VoteID: {vote_id}")
+    RICH_CONSOLE.log(f"Decoding {target} VoteID: {vote_id}")
 
     # get script from voting data:
-    script = get_evm_script(vote_id)
+    script = get_evm_script(vote_id, DAO_VOTING_CONTRACTS[target])
     if not script:
         RICH_CONSOLE.log("[red] VoteID not found in any DAO voting contract [/red]")
         return
