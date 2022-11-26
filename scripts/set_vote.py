@@ -1,20 +1,14 @@
-import sys
-
 import ape
 import click
-from rich.console import Console as RichConsole
+from ape.logging import logger
 
-from curve_dao import CURVE_DEPLOYER_2, make_vote, select_target
+from curve_dao import make_vote, select_target
 from curve_dao.modules.smartwallet_checker import whitelist_vecrv_lock
 
-RICH_CONSOLE = RichConsole(file=sys.stdout)
 
-
-@click.group(short_help="Smartwallet Checker Admin Control Operations")
+@click.group()
 def cli():
-    """
-    Command-line helper for managing Smartwallet Checker
-    """
+    pass
 
 
 @cli.command(
@@ -24,25 +18,14 @@ def cli():
 )
 @ape.cli.network_option()
 @ape.cli.account_option()
-@click.option(
-    "--address",
-    "-w",
-    type=str,
-    default="0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86",  # some default address
-)
-@click.option("--description", "-d", type=str, default="test")
-def whitelist(network, account, address, description):
-
-    if network == "ethereum:mainnet-fork":
-        account = ape.accounts[CURVE_DEPLOYER_2]
-
-    RICH_CONSOLE.log(f"Connected to {network}")
-    RICH_CONSOLE.log(f"Creating vote. Proposer: {account}")
+@click.option("--addr", "-a", type=str, required=True)
+@click.option("--description", "-d", type=str, required=True)
+def whitelist(network, account, addr, description):
 
     target = select_target("ownership")
     tx = make_vote(
         target=target,
-        actions=[whitelist_vecrv_lock(address)],
+        actions=[whitelist_vecrv_lock(addr)],
         description=description,
         vote_creator=account,
     )
@@ -51,4 +34,4 @@ def whitelist(network, account, address, description):
         vote_id = log.event_arguments["voteId"]
         break
 
-    RICH_CONSOLE.log(f"Proposal submitted successfully! VoteId: {vote_id}")
+    logger.info(f"Proposal submitted successfully! VoteId: {vote_id}")

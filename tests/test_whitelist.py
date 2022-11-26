@@ -12,16 +12,16 @@ from curve_dao.vote_utils import make_vote
 
 @pytest.fixture(scope="module")
 def smartwallet_checker():
-    return ape.Contract(SMARTWALLET_CHECKER)
+    yield ape.Contract(SMARTWALLET_CHECKER)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def addr_to_whitelist():
     # cryptoriskteam msig:
-    return "0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86"
+    yield "0xa2482aA1376BEcCBA98B17578B17EcE82E6D9E86"
 
 
-def test_simulate_whitelist(smartwallet_checker, addr_to_whitelist, vote_deployer):
+def test_whitelist(smartwallet_checker, addr_to_whitelist, vote_deployer):
     assert not smartwallet_checker.check(addr_to_whitelist)
 
     tx = make_vote(
@@ -30,6 +30,7 @@ def test_simulate_whitelist(smartwallet_checker, addr_to_whitelist, vote_deploye
         description="test",
         vote_creator=vote_deployer,
     )
+
     for log in tx.decode_logs():
         vote_id = log.event_arguments["voteId"]
         break
@@ -40,3 +41,4 @@ def test_simulate_whitelist(smartwallet_checker, addr_to_whitelist, vote_deploye
     )
 
     assert smartwallet_checker.check(addr_to_whitelist)
+    assert 1 == 1

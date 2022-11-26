@@ -1,16 +1,14 @@
 import json
 import os
-import sys
 import warnings
 from typing import Dict, List, Tuple
 
 import ape
 import requests
-from rich.console import Console as RichConsole
+from ape.logging import logger
 
 warnings.filterwarnings("ignore")
 
-RICH_CONSOLE = RichConsole(file=sys.stdout)
 CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
 
 
@@ -27,8 +25,8 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     agent = ape.Contract(target["agent"])
     voting = target["voting"]
 
-    RICH_CONSOLE.log(f"Agent Contract: [yellow]{agent.address}")
-    RICH_CONSOLE.log(f"Voting Contract: [yellow]{voting}")
+    logger.info(f"Agent Contract: [yellow]{agent.address}")
+    logger.info(f"Voting Contract: [yellow]{voting}")
 
     evm_script = "0x00000001"
 
@@ -77,7 +75,7 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
     evm_script = prepare_evm_script(target, actions)
-    RICH_CONSOLE.log(f"EVM script: {evm_script}")
+    logger.debug(f"EVM script: {evm_script}")
 
     tx = aragon.newVote(
         evm_script,

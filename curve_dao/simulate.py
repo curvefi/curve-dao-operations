@@ -1,27 +1,24 @@
 import pprint
-import sys
 
 import ape
-from rich.console import Console as RichConsole
+from ape.logging import logger
 
 from curve_dao import CONVEX_VOTERPROXY
-
-RICH_CONSOLE = RichConsole(file=sys.stdout)
 
 
 def simulate(vote_id: int, voting_contract: str):
     """Simulate passing vote on mainnet-fork"""
-    RICH_CONSOLE.log("[yellow]--------- SIMULATE VOTE ---------")
+    logger.info("--------- SIMULATE VOTE ---------")
 
     aragon = ape.project.Voting.at(voting_contract)
 
     # print vote details to console first:
-    RICH_CONSOLE.log("Vote stats before Convex Vote:")
+    logger.info("Vote stats before Convex Vote:")
     vote_stats = aragon.getVote(vote_id)
-    RICH_CONSOLE.log(pprint.pformat(vote_stats, indent=4))
+    logger.info(pprint.pformat(vote_stats, indent=4))
 
     # vote
-    RICH_CONSOLE.log("Simulate Convex 'yes' vote")
+    logger.info("Simulate Convex 'yes' vote")
     aragon.vote(vote_id, True, False, sender=ape.accounts[CONVEX_VOTERPROXY])
 
     # sleep for a week so it has time to pass
@@ -29,12 +26,12 @@ def simulate(vote_id: int, voting_contract: str):
     ape.chain.mine(num_blocks)
 
     # get vote stats:
-    RICH_CONSOLE.log("Vote stats after 1 week:")
+    logger.info("Vote stats after 1 week:")
     vote_stats = aragon.getVote(vote_id)
-    RICH_CONSOLE.log(pprint.pformat(vote_stats, indent=4))
+    logger.debug(pprint.pformat(vote_stats, indent=4))
 
     # moment of truth - execute the vote!
-    RICH_CONSOLE.log("Simulate proposal execution")
+    logger.info("Simulate proposal execution")
     enacter = ape.accounts[CONVEX_VOTERPROXY]
     aragon.executeVote(vote_id, sender=enacter)
-    RICH_CONSOLE.log("[green] Vote Executed!")
+    logger.info("Vote Executed!")
