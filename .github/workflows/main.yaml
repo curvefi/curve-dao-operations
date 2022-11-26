@@ -29,6 +29,9 @@ jobs:
         with:
           python-version: 3.10.4
 
+      - name: Install libudev-dev (workaround to CI bug)
+        run: apt install libudev-dev
+
       - name: Install Requirements
         run: >-
           pip install -r dev-requirements.txt
