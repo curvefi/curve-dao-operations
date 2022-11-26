@@ -5,7 +5,7 @@ import ape
 import click
 from rich.console import Console as RichConsole
 
-from scripts.utils.decoder_utils import decode_input
+from curve_dao.decoder_utils import decode_input
 
 warnings.filterwarnings("ignore")
 

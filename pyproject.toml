@@ -1,0 +1,37 @@
+[project]
+name = "curve_dao"
+version = "0.0.1"
+description = "CLI tools for the Curve DAO"
+license = { file = "LICENSE" }
+readme = "README.md"
+
+keywords = [
+    "ethereum",
+    "evm",
+    "smart contract",
+    "development",
+    "dao",
+    "curve finance",
+]
+
+classifiers = ["Topic :: Software Development"]
+
+# Requirements
+dependencies = [
+    "eth-ape>=0.5.2",
+    "ape-hardhat>=0.5.1",
+    "ape-alchemy>=0.5.0",
+    "ape-solidity>=0.5.0",
+    "ape-vyper>=0.5.0",
+    "ape-ledger>=0.5.0",
+    "ape-etherscan>=0.5.1",
+    "black",
+    "pytest",
+    "requests",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[tool.setuptools.packages.find]
+include = ["curve_dao*"]

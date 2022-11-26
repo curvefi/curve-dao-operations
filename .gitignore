@@ -7,3 +7,4 @@ __pycache__/
 .DS_Store
 venv/
 .vscode/
+curve_dao.egg-info/
