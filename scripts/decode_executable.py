@@ -57,7 +57,7 @@ def cli():
     type=click.Choice(["ownership", "parameter"]),
     required=True,
 )
-@click.option("--vote_id", "-v", type=int, default=0)
+@click.option("--vote_id", "-vi", type=int, default=0)
 def decode_vote(network, target: str, vote_id: int):
 
     RICH_CONSOLE.log(f"Decoding {target} VoteID: {vote_id}")

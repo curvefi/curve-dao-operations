@@ -20,8 +20,8 @@ hardhat:
   fork:
     ethereum:
       mainnet:
-        upstream_provider: alchemy
-        # upstream_provider: geth
+        # upstream_provider: alchemy
+        upstream_provider: geth
 
 geth:
   ethereum:

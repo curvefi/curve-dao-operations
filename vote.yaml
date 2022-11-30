@@ -1,0 +1,6 @@
+target: ownership
+description: Allow cryptoriskteam msig to lock vecrv
+
+whitelist:
+  addresses:
+    - "0xE6DA683076b7eD6ce7eC972f21Eb8F91e9137a17"

@@ -2,8 +2,7 @@ import ape
 import click
 from ape.logging import logger
 
-from curve_dao import make_vote, select_target
-from curve_dao.modules.smartwallet_checker import whitelist_vecrv_lock
+from curve_dao import compile_actions, make_vote
 
 
 @click.group()
@@ -18,15 +17,15 @@ def cli():
 )
 @ape.cli.network_option()
 @ape.cli.account_option()
-@click.option("--addr", "-a", type=str, required=True)
-@click.option("--description", "-d", type=str, required=True)
-def whitelist(network, account, addr, description):
+@click.option("--votefile", "-vf", type=str, default="vote.yaml")
+def whitelist(network, account, votefile):
 
-    target = select_target("ownership")
+    proposal = compile_actions(votefile)
+
     tx = make_vote(
-        target=target,
-        actions=[whitelist_vecrv_lock(addr)],
-        description=description,
+        target=proposal["target"],
+        actions=proposal["actions"],
+        description=proposal["description"],
         vote_creator=account,
     )
 

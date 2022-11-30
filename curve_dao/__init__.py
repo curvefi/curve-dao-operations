@@ -1,6 +1,6 @@
+from curve_dao.compile_vote import compile_actions  # noqa
 from curve_dao.modules import smartwallet_checker  # noqa
-
-from .vote_utils import make_vote  # noqa
+from curve_dao.vote_utils import make_vote  # noqa
 
 CURVE_DAO_OWNERSHIP = {
     "agent": "0x40907540d8a6c65c637785e8f8b742ae6b0b9968",
@@ -27,6 +27,7 @@ EMERGENCY_DAO = {
 veCRV = "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2"
 CRV = "0xD533a949740bb3306d119CC777fa900bA034cd52"
 CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
+METAREGISTRY_MAINNET = "0xF98B45FA17DE75FB1aD0e7aFD971b0ca00e379fC"
 
 
 def select_target(vote_type: str):
