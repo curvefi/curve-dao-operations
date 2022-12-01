@@ -1,6 +1,6 @@
 import ape
 
-gauge_controller = ape.Contract("0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB")
+gauge_controller = "0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB"
 
 
 class UnkillableGauge(Exception):

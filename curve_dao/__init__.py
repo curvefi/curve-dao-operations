@@ -1,7 +1,3 @@
-from curve_dao.compile_vote import compile_actions  # noqa
-from curve_dao.modules import smartwallet_checker  # noqa
-from curve_dao.vote_utils import make_vote  # noqa
-
 CURVE_DAO_OWNERSHIP = {
     "agent": "0x40907540d8a6c65c637785e8f8b742ae6b0b9968",
     "voting": "0xe478de485ad2fe566d49342cbd03e49ed7db3356",

@@ -1,8 +1,9 @@
+import ape
 import pytest
 import yaml
 
 from curve_dao.compile_vote import _compile_actions
-from curve_dao.modules.smartwallet_checker import smartwallet_check
+from curve_dao.modules.smartwallet_checker import SMARTWALLET_CHECKER
 from curve_dao.simulate import simulate
 from curve_dao.vote_utils import make_vote
 
@@ -20,13 +21,14 @@ def whitelist_vote_config():
     description: Allow cryptoriskteam msig to lock vecrv
 
     whitelist:
-    addresses:
-        - "0xE6DA683076b7eD6ce7eC972f21Eb8F91e9137a17"
+        addresses:
+            - "0xE6DA683076b7eD6ce7eC972f21Eb8F91e9137a17"
     """
     return _compile_actions(yaml.safe_load(vote_yaml))
 
 
 def test_whitelist(addr_to_whitelist, whitelist_vote_config, vote_deployer):
+    smartwallet_check = ape.Contract(SMARTWALLET_CHECKER)
     assert not smartwallet_check.check(addr_to_whitelist)
 
     tx = make_vote(
@@ -46,3 +48,4 @@ def test_whitelist(addr_to_whitelist, whitelist_vote_config, vote_deployer):
     )
 
     assert smartwallet_check.check(addr_to_whitelist)
+    assert 1 < 0
