@@ -1,6 +1,7 @@
 import ape
 import pytest
 import yaml
+from ape.logging import logger
 
 from curve_dao.compile_vote import _compile_actions
 from curve_dao.modules.smartwallet_checker import SMARTWALLET_CHECKER
@@ -15,26 +16,24 @@ def addr_to_whitelist():
 
 
 @pytest.fixture(scope="module")
-def whitelist_vote_config():
+def vote_config():
     vote_yaml = """
-    target: ownership
     description: Allow cryptoriskteam msig to lock vecrv
 
     whitelist:
-        addresses:
-            - "0xE6DA683076b7eD6ce7eC972f21Eb8F91e9137a17"
+        - "0xE6DA683076b7eD6ce7eC972f21Eb8F91e9137a17"
     """
     return _compile_actions(yaml.safe_load(vote_yaml))
 
 
-def test_whitelist(addr_to_whitelist, whitelist_vote_config, vote_deployer):
+def test_whitelist(addr_to_whitelist, vote_config, vote_deployer):
     smartwallet_check = ape.Contract(SMARTWALLET_CHECKER)
     assert not smartwallet_check.check(addr_to_whitelist)
 
     tx = make_vote(
-        target=whitelist_vote_config["target"],
-        actions=whitelist_vote_config["actions"],
-        description=whitelist_vote_config["description"],
+        target=vote_config["target"],
+        actions=vote_config["actions"],
+        description=vote_config["description"],
         vote_creator=vote_deployer,
     )
 
@@ -44,8 +43,11 @@ def test_whitelist(addr_to_whitelist, whitelist_vote_config, vote_deployer):
 
     simulate(
         vote_id=vote_id,
-        voting_contract=whitelist_vote_config["target"]["voting"],
+        voting_contract=vote_config["target"]["voting"],
     )
 
-    assert smartwallet_check.check(addr_to_whitelist)
-    assert 1 < 0
+    if not smartwallet_check.check(addr_to_whitelist):
+        logger.info("Whitelist failed!")
+        assert False
+
+    logger.info("Successful Whitelist!")

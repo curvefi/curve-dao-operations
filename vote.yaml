@@ -1,4 +1,3 @@
-target: ownership
 description: Allow cryptoriskteam msig to lock vecrv
 
 whitelist:

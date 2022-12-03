@@ -13,7 +13,7 @@ def _get_gauge_admin(addr):
         factory = ape.Contract(contract.factory())
         admin = ape.Contract(factory.admin())
     elif hasattr(contract, "admin"):
-        admin = ape.Contract(factory.admin())
+        admin = ape.Contract(contract.admin())
     elif hasattr(contract, "owner"):
         admin = contract.owner()
 

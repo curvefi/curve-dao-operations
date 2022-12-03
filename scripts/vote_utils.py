@@ -12,8 +12,8 @@ def cli():
 
 @cli.command(
     cls=ape.cli.NetworkBoundCommand,
-    name="whitelist",
-    short_help="Whitelist proposed contract to lock veCRV",
+    name="propose",
+    short_help="Propose an on-chain Curve DAO vote",
 )
 @ape.cli.network_option()
 @ape.cli.account_option()
