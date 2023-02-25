@@ -8,3 +8,5 @@ __pycache__/
 venv/
 .vscode/
 curve_dao.egg-info/
+*.swp
+*.swo
