@@ -3,8 +3,8 @@ from curve_dao.modules import smartwallet_checker  # noqa
 from .vote_utils import make_vote  # noqa
 
 CURVE_DAO_OWNERSHIP = {
-    "agent": "0x40907540d8a6c65c637785e8f8b742ae6b0b9968",
-    "voting": "0xe478de485ad2fe566d49342cbd03e49ed7db3356",
+    "agent": "0x40907540d8a6C65c637785e8f8B742ae6b0b9968",
+    "voting": "0xE478de485ad2fe566d49342Cbd03E49ed7DB3356",
     "token": "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2",
     "quorum": 30,
 }
