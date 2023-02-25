@@ -40,6 +40,7 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
         ).data
         length = hex(len(agent_calldata.hex()) // 2)[2:].zfill(8)
         evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata.hex()}"
+        evm_script = bytes(evm_script, "utf-8")
 
     return evm_script
 
@@ -56,6 +57,9 @@ def get_vote_description_ipfs_hash(description: str):
         files={"file": text},
         auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
     )
+    assert (
+        200 <= response.status_code < 400
+    ), f"POST to IPFS failed: {response.status_code}"
     return response.json()["Hash"]
 
 
