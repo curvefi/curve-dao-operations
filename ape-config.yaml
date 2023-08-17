@@ -16,7 +16,7 @@ ethereum:
     transaction_acceptance_timeout: 99999999
 
 hardhat:
-  port: auto
+  # port: auto
   fork:
     ethereum:
       mainnet:
