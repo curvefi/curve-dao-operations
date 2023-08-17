@@ -11,20 +11,6 @@ warnings.filterwarnings("ignore")
 
 CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
 
-# def prepare_evm_script():
-#     agent = Contract.from_explorer(TARGET["agent"])
-#     evm_script = "0x00000001"
-#
-#     for address, fn_name, *args in ACTIONS:
-#         contract = Contract.from_explorer(address)
-#         fn = getattr(contract, fn_name)
-#         calldata = fn.encode_input(*args)
-#         agent_calldata = agent.execute.encode_input(address, 0, calldata)[2:]
-#         length = hex(len(agent_calldata) // 2)[2:].zfill(8)
-#         evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata}"
-#
-#     return evm_script
-
 
 def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     """Generates EVM script to be executed by AragonDAO contracts.
@@ -42,25 +28,19 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     logger.info(f"Agent Contract: {agent.address}")
     logger.info(f"Voting Contract: {voting}")
 
-    # evm_script = "0x00000001"
     evm_script = bytes.fromhex("00000001")
 
     for address, fn_name, *args in actions:
-        print(address, fn_name, *args)
         contract = ape.Contract(address)
         fn = getattr(contract, fn_name)
         calldata = fn.as_transaction(*args, sender=agent).data
-        print(calldata)
         agent_calldata = agent.execute.as_transaction(
             address, 0, calldata, sender=voting
         ).data
-        print(agent_calldata)
         length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
         evm_script = (
             evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
         )
-        # evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata.hex()}"
-        # evm_script = bytes(evm_script, "utf-8")
 
     return evm_script
 
