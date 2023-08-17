@@ -25,8 +25,8 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     agent = ape.Contract(target["agent"])
     voting = target["voting"]
 
-    logger.info(f"Agent Contract: [yellow]{agent.address}")
-    logger.info(f"Voting Contract: [yellow]{voting}")
+    logger.info(f"Agent Contract: {agent.address}")
+    logger.info(f"Voting Contract: {voting}")
 
     evm_script = "0x00000001"
 
