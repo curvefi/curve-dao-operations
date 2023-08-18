@@ -1,9 +1,7 @@
 import ape
 import pytest
 
-from curve_dao import CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAM
-from curve_dao.modules.smartwallet_checker import (SMARTWALLET_CHECKER,
-                                                   whitelist_vecrv_lock)
+from curve_dao import CURVE_DAO_OWNERSHIP
 from curve_dao.simulate import simulate
 from curve_dao.vote_utils import make_vote
 

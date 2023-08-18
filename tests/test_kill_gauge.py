@@ -1,10 +1,7 @@
 import ape
 import pytest
 
-from curve_dao import (CRYPTOSWAP_OWNER_PROXY, CURVE_DAO_OWNERSHIP,
-                       CURVE_DAO_PARAM)
-from curve_dao.modules.smartwallet_checker import (SMARTWALLET_CHECKER,
-                                                   whitelist_vecrv_lock)
+from curve_dao import CRYPTOSWAP_OWNER_PROXY, CURVE_DAO_OWNERSHIP
 from curve_dao.simulate import simulate
 from curve_dao.vote_utils import make_vote
 
@@ -22,7 +19,7 @@ def tricrypto_ng_gauge():
 
 
 def test_kill_factory_gauge(vote_deployer, crypto_factory_gauge):
-    assert crypto_factory_gauge.is_killed() == False
+    assert crypto_factory_gauge.is_killed() is False
 
     parameter_action = (
         CRYPTOSWAP_OWNER_PROXY,
@@ -48,11 +45,11 @@ def test_kill_factory_gauge(vote_deployer, crypto_factory_gauge):
         voting_contract=CURVE_DAO_OWNERSHIP["voting"],
     )
 
-    assert crypto_factory_gauge.is_killed() == True
+    assert crypto_factory_gauge.is_killed() is True
 
 
 def test_kill_ng_gauge(vote_deployer, tricrypto_ng_gauge):
-    assert tricrypto_ng_gauge.is_killed() == False
+    assert tricrypto_ng_gauge.is_killed() is False
 
     parameter_action = (
         tricrypto_ng_gauge.address,  # owner is factory admin
@@ -77,4 +74,4 @@ def test_kill_ng_gauge(vote_deployer, tricrypto_ng_gauge):
         voting_contract=CURVE_DAO_OWNERSHIP["voting"],
     )
 
-    assert tricrypto_ng_gauge.is_killed() == True
+    assert tricrypto_ng_gauge.is_killed() is True
