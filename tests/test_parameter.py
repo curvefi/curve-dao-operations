@@ -45,11 +45,13 @@ def test_parameter_update(vote_deployer, tricrypto_pool):
         vote_id = log.event_arguments["voteId"]
         break
 
+    # this advances the chain one week from vote creation
     simulate(
         vote_id=vote_id,
         voting_contract=CURVE_DAO_OWNERSHIP["voting"],
     )
 
+    # need to advance another week to finish the ramp
     ape.chain.mine(deltatime=week_seconds)
 
     assert tricrypto_pool.A() == future_A
