@@ -8,7 +8,7 @@ module.exports = {
       initialBaseFeePerGas: 0,
       accounts: {
         mnemonic: "test test test test test test test test test test test junk",
-        path: "m/44'/60'/0'",
+        path: "m/44'/60'/0'/0",
         count: 10
       }
     },
