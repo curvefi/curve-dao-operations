@@ -31,6 +31,7 @@ CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
 # tricrypto-ng factory admin is already the OWNERSHIP agent
 CRYPTOSWAP_OWNER_PROXY = "0x5a8fdC979ba9b6179916404414F7BA4D8B77C8A1"
 
+
 def select_target(vote_type: str):
 
     match vote_type:
