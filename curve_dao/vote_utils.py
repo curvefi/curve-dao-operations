@@ -25,21 +25,22 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     agent = ape.Contract(target["agent"])
     voting = target["voting"]
 
-    logger.info(f"Agent Contract: [yellow]{agent.address}")
-    logger.info(f"Voting Contract: [yellow]{voting}")
+    logger.info(f"Agent Contract: {agent.address}")
+    logger.info(f"Voting Contract: {voting}")
 
-    evm_script = "0x00000001"
+    evm_script = bytes.fromhex("00000001")
 
     for address, fn_name, *args in actions:
-
         contract = ape.Contract(address)
         fn = getattr(contract, fn_name)
         calldata = fn.as_transaction(*args, sender=agent).data
         agent_calldata = agent.execute.as_transaction(
             address, 0, calldata, sender=voting
         ).data
-        length = hex(len(agent_calldata.hex()) // 2)[2:].zfill(8)
-        evm_script = f"{evm_script}{agent.address[2:]}{length}{agent_calldata.hex()}"
+        length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
+        evm_script = (
+            evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
+        )
 
     return evm_script
 
@@ -56,6 +57,9 @@ def get_vote_description_ipfs_hash(description: str):
         files={"file": text},
         auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
     )
+    assert (
+        200 <= response.status_code < 400
+    ), f"POST to IPFS failed: {response.status_code}"
     return response.json()["Hash"]
 
 
@@ -75,7 +79,7 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
     evm_script = prepare_evm_script(target, actions)
-    logger.debug(f"EVM script: {evm_script}")
+    logger.info(f"EVM script: {evm_script}")
 
     tx = aragon.newVote(
         evm_script,

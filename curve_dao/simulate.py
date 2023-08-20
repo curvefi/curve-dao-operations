@@ -22,13 +22,13 @@ def simulate(vote_id: int, voting_contract: str):
     aragon.vote(vote_id, True, False, sender=ape.accounts[CONVEX_VOTERPROXY])
 
     # sleep for a week so it has time to pass
-    num_blocks = int(aragon.voteTime() + 200 / 10)
-    ape.chain.mine(num_blocks)
+    num_seconds = aragon.voteTime()
+    ape.chain.mine(deltatime=num_seconds)
 
     # get vote stats:
     logger.info("Vote stats after 1 week:")
     vote_stats = aragon.getVote(vote_id)
-    logger.debug(pprint.pformat(vote_stats, indent=4))
+    logger.info(pprint.pformat(vote_stats, indent=4))
 
     # moment of truth - execute the vote!
     logger.info("Simulate proposal execution")
