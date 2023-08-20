@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
 DAO_VOTING_CONTRACTS = {
-    "ownership": "0xe478de485ad2fe566d49342cbd03e49ed7db3356",
+    "ownership": "0xE478de485ad2fe566d49342Cbd03E49ed7DB3356",
     "parameter": "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
     "emergency": "0x1115c9b3168563354137cdc60efb66552dd50678",
 }
@@ -22,6 +22,8 @@ def get_evm_script(vote_id: str, voting_contract: str) -> str:
 
 
 def format_fn_inputs(abi, inputs):
+    if len(inputs) == 0:
+        return ""
 
     if len(inputs) == 1:
         argname = abi.inputs[0].name
