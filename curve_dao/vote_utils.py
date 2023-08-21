@@ -51,7 +51,7 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     return evm_script
 
 
-def get_vote_description_ipfs_hash(description: str):
+def get_ipfs_hash_from_vote_description(description: str):
     """Uploads vote description to IPFS and returns the IPFS hash.
 
     NOTE: needs environment variables for infura IPFS access. Please
@@ -67,6 +67,26 @@ def get_vote_description_ipfs_hash(description: str):
         200 <= response.status_code < 400
     ), f"POST to IPFS failed: {response.status_code}"
     return response.json()["Hash"]
+
+
+def get_vote_description_from_ifps_hash(ipfs_hash: str):
+    response = requests.post(
+        f"https://ipfs.infura.io:5001/api/v0/get?arg={ipfs_hash}",
+        auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
+    )
+    response.raise_for_status()
+    response_string = response.content.decode("utf-8")
+    json_string = []
+    in_json = False
+    for c in response_string:
+        if c == "{":
+            in_json = True
+        if in_json:
+            json_string.append(c)
+        if c == "}":
+            break
+    json_string = "".join(json_string)
+    return json.loads(json_string)
 
 
 def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator: str):
@@ -89,7 +109,7 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
 
     tx = aragon.newVote(
         evm_script,
-        f"ipfs:{get_vote_description_ipfs_hash(description)}",
+        f"ipfs:{get_ipfs_hash_from_vote_description(description)}",
         False,
         False,
         sender=vote_creator,
