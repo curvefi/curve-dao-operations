@@ -18,8 +18,12 @@ DAO_VOTING_CONTRACTS = {
 }
 
 
-def get_evm_script(vote_id: str, voting_contract: str) -> str:
-    return ape.project.Voting.at(voting_contract).getVote(vote_id)["script"]
+def get_evm_script(vote_id: str, target: str) -> str:
+    voting_contract_address = DAO_VOTING_CONTRACTS[target]
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+    vote = voting_contract.getVote(vote_id)
+    script = vote["script"]
+    return script
 
 
 @click.group(
@@ -49,27 +53,37 @@ def decode(network, target: str, vote_id: int):
     RICH_CONSOLE.log(f"Decoding {target} VoteID: {vote_id}")
 
     # get script from voting data:
-    script = get_evm_script(vote_id, DAO_VOTING_CONTRACTS[target])
+    script = get_evm_script(vote_id, target)
     if not script:
         RICH_CONSOLE.log("[red] VoteID not found in any DAO voting contract [/red]")
         return
-    snapshot_block = ape.project.Voting.at(DAO_VOTING_CONTRACTS[target]).getVote(
-        vote_id
-    )["snapshotBlock"]
+
+    description = get_description_from_vote_id(target, vote_id)
+    RICH_CONSOLE.log(description)
 
     votes = decode_vote_script(script)
-    new_vote_event = ape.project.Voting.at(DAO_VOTING_CONTRACTS[target]).StartVote
-    all_new_vote_events = new_vote_event.query(
+    for vote in votes:
+        formatted_output = vote["formatted_output"]
+        RICH_CONSOLE.log(formatted_output)
+
+
+def get_ipfs_hash_from_vote_id(target, vote_id):
+    voting_contract_address = DAO_VOTING_CONTRACTS[target]
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+    snapshot_block = voting_contract.getVote(vote_id)["snapshotBlock"]
+    vote_events = voting_contract.StartVote.query(
         "voteId",
         "metadata",
         start_block=snapshot_block - 1,
         stop_block=snapshot_block + 1,
     )
-    vote_row = all_new_vote_events.loc[all_new_vote_events["voteId"] == vote_id]
+    vote_row = vote_events.loc[vote_events["voteId"] == vote_id]
     ipfs_hash = vote_row["metadata"].iloc[0]
     ipfs_hash = ipfs_hash[5:]
+    return ipfs_hash
+
+
+def get_description_from_vote_id(target, vote_id):
+    ipfs_hash = get_ipfs_hash_from_vote_id(target, vote_id)
     description = get_vote_description_from_ifps_hash(ipfs_hash)
-    RICH_CONSOLE.log(description)
-    for vote in votes:
-        formatted_output = vote["formatted_output"]
-        RICH_CONSOLE.log(formatted_output)
+    return description
