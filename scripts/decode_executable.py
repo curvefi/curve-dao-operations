@@ -3,9 +3,8 @@ import warnings
 
 import ape
 import click
-from rich.console import Console as RichConsole
-
 from curve_dao.decoder_utils import decode_input
+from rich.console import Console as RichConsole
 
 warnings.filterwarnings("ignore")
 
@@ -21,20 +20,29 @@ def get_evm_script(vote_id: str, voting_contract: str) -> str:
     return ape.project.Voting.at(voting_contract).getVote(vote_id)["script"]
 
 
-def format_fn_inputs(abi, inputs):
-    if len(inputs) == 0:
+def get_inputs_with_names(abi, inputs):
+    arg_names = []
+    for i in range(len(inputs)):
+        argname = abi.inputs[i].name
+        arg_names.append(argname)
+
+    inputs_with_names = list(zip(arg_names, inputs))
+    return inputs_with_names
+
+
+def format_fn_inputs(inputs_with_names):
+    if len(inputs_with_names) == 0:
         return ""
 
-    if len(inputs) == 1:
-        argname = abi.inputs[0].name
-        return f"    └─ [bold]{argname}[/]: [yellow]{inputs[-1]}[/]"
+    if len(inputs_with_names) == 1:
+        name, arg = inputs_with_names[0]
+        return f"    └─ [bold]{name}[/]: [yellow]{arg}[/]"
 
     formatted_args = ""
-    for i in range(len(inputs) - 1):
-        argname = abi.inputs[i].name
-        formatted_args += f"    ├─ [bold]{argname}[/]: [yellow]{inputs[i]}[/]\n"
-    argname = abi.inputs[-1].name
-    formatted_args += f"    └─ [bold]{argname}[/]: [yellow]{inputs[-1]}[/]"
+    for name, arg in inputs_with_names[:-1]:
+        formatted_args += f"    ├─ [bold]{name}[/]: [yellow]{arg}[/]\n"
+    name, arg = inputs_with_names[-1]
+    formatted_args += f"    └─ [bold]{name}[/]: [yellow]{arg}[/]"
     return formatted_args
 
 
@@ -71,6 +79,7 @@ def decode_vote(network, target: str, vote_id: int):
         return
     idx = 4
 
+    votes = []
     while idx < len(script):
 
         # get target contract address:
@@ -85,25 +94,37 @@ def decode_vote(network, target: str, vote_id: int):
         idx += length
 
         fn, inputs = decode_input(target, calldata)
+        agent = None
 
         # print decoded vote:
         if calldata[:4].hex() == "0xb61d27f6":
-
-            agent_target = ape.Contract(inputs[0])
-            fn, inputs = decode_input(agent_target, inputs[2])
-            formatted_inputs = format_fn_inputs(fn, inputs)
+            agent = target
+            target = ape.Contract(inputs[0])
+            fn, inputs = decode_input(target, inputs[2])
+            inputs_with_names = get_inputs_with_names(fn, inputs)
+            formatted_inputs = format_fn_inputs(inputs_with_names)
             RICH_CONSOLE.log(
-                f"Call via agent: [yellow]{target}[/]\n"
-                f" ├─ [bold]To[/]: [green]{agent_target}[/]\n"
+                f"Call via agent: [yellow]{agent}[/]\n"
+                f" ├─ [bold]To[/]: [green]{target}[/]\n"
                 f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
                 f" └─ [bold]Inputs[/]: \n{formatted_inputs}\n"
             )
-
         else:
-
+            inputs_with_names = get_inputs_with_names(fn, inputs)
+            formatted_inputs = format_fn_inputs(inputs_with_names)
             RICH_CONSOLE.log(
                 f"Direct call\n "
                 f" ├─ [bold]To[/]: [green]{target}[/]\n"
                 f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
-                f" └─ [bold]Inputs[/]: {inputs}\n"
+                f" └─ [bold]Inputs[/]: {formatted_inputs}\n"
             )
+
+        vote = {
+            "agent": agent.address if agent else None,
+            "target": target.address,
+            "function": fn.name,
+            "inputs": inputs_with_names,
+        }
+        votes.append(vote)
+
+    return votes
