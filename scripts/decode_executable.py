@@ -4,6 +4,7 @@ import warnings
 import ape
 import click
 from curve_dao.decoder_utils import decode_input
+from curve_dao.vote_utils import decode_vote_script
 from rich.console import Console as RichConsole
 
 warnings.filterwarnings("ignore")
@@ -18,32 +19,6 @@ DAO_VOTING_CONTRACTS = {
 
 def get_evm_script(vote_id: str, voting_contract: str) -> str:
     return ape.project.Voting.at(voting_contract).getVote(vote_id)["script"]
-
-
-def get_inputs_with_names(abi, inputs):
-    arg_names = []
-    for i in range(len(inputs)):
-        argname = abi.inputs[i].name
-        arg_names.append(argname)
-
-    inputs_with_names = list(zip(arg_names, inputs))
-    return inputs_with_names
-
-
-def format_fn_inputs(inputs_with_names):
-    if len(inputs_with_names) == 0:
-        return ""
-
-    if len(inputs_with_names) == 1:
-        name, arg = inputs_with_names[0]
-        return f"    └─ [bold]{name}[/]: [yellow]{arg}[/]"
-
-    formatted_args = ""
-    for name, arg in inputs_with_names[:-1]:
-        formatted_args += f"    ├─ [bold]{name}[/]: [yellow]{arg}[/]\n"
-    name, arg = inputs_with_names[-1]
-    formatted_args += f"    └─ [bold]{name}[/]: [yellow]{arg}[/]"
-    return formatted_args
 
 
 @click.group(
@@ -68,7 +43,7 @@ def cli():
     required=True,
 )
 @click.option("--vote_id", "-v", type=int, default=0)
-def decode_vote(network, target: str, vote_id: int):
+def decode(network, target: str, vote_id: int):
 
     RICH_CONSOLE.log(f"Decoding {target} VoteID: {vote_id}")
 
@@ -77,54 +52,8 @@ def decode_vote(network, target: str, vote_id: int):
     if not script:
         RICH_CONSOLE.log("[red] VoteID not found in any DAO voting contract [/red]")
         return
-    idx = 4
 
-    votes = []
-    while idx < len(script):
-
-        # get target contract address:
-        target = ape.Contract(script[idx : idx + 20])
-        idx += 20
-
-        length = int(script[idx : idx + 4].hex(), 16)
-        idx += 4
-
-        # calldata to execute for the dao:
-        calldata = script[idx : idx + length]
-        idx += length
-
-        fn, inputs = decode_input(target, calldata)
-        agent = None
-
-        # print decoded vote:
-        if calldata[:4].hex() == "0xb61d27f6":
-            agent = target
-            target = ape.Contract(inputs[0])
-            fn, inputs = decode_input(target, inputs[2])
-            inputs_with_names = get_inputs_with_names(fn, inputs)
-            formatted_inputs = format_fn_inputs(inputs_with_names)
-            RICH_CONSOLE.log(
-                f"Call via agent: [yellow]{agent}[/]\n"
-                f" ├─ [bold]To[/]: [green]{target}[/]\n"
-                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
-                f" └─ [bold]Inputs[/]: \n{formatted_inputs}\n"
-            )
-        else:
-            inputs_with_names = get_inputs_with_names(fn, inputs)
-            formatted_inputs = format_fn_inputs(inputs_with_names)
-            RICH_CONSOLE.log(
-                f"Direct call\n "
-                f" ├─ [bold]To[/]: [green]{target}[/]\n"
-                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
-                f" └─ [bold]Inputs[/]: {formatted_inputs}\n"
-            )
-
-        vote = {
-            "agent": agent.address if agent else None,
-            "target": target.address,
-            "function": fn.name,
-            "inputs": inputs_with_names,
-        }
-        votes.append(vote)
-
-    return votes
+    votes = decode_vote_script(script)
+    for vote in votes:
+        formatted_output = vote["formatted_output"]
+        RICH_CONSOLE.log(formatted_output)
