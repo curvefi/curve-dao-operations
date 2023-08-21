@@ -3,12 +3,17 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import ape
 from ape.exceptions import DecodingError
 from ape.utils.abi import Struct
-from eth_abi import decode_abi
 from eth_abi.exceptions import InsufficientDataBytes
 from eth_hash.auto import keccak
 from eth_utils import humanize_hash, is_hex_address, to_checksum_address
 from ethpm_types import HexBytes
 from ethpm_types.abi import MethodABI
+
+try:
+    from eth_abi import decode_abi
+except ImportError:
+    from eth_abi import decode as decode_abi
+
 
 
 def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> List:
