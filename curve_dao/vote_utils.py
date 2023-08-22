@@ -16,9 +16,14 @@ warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore")
 
 CONVEX_VOTERPROXY = "0x989AEB4D175E16225E39E87D0D97A3360524AD80"
+DAO_VOTING_CONTRACTS = {
+    "ownership": "0xE478de485ad2fe566d49342Cbd03E49ed7DB3356",
+    "parameter": "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
+    "emergency": "0x1115c9b3168563354137cdc60efb66552dd50678",
+}
 
 
-def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
+def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
     """Generates EVM script to be executed by AragonDAO contracts.
 
     Args:
@@ -51,7 +56,7 @@ def prepare_evm_script(target: Dict, actions: List[Tuple]) -> str:
     return evm_script
 
 
-def get_ipfs_hash_from_vote_description(description: str):
+def get_ipfs_hash_from_description(description: str):
     """Uploads vote description to IPFS and returns the IPFS hash.
 
     NOTE: needs environment variables for infura IPFS access. Please
@@ -69,7 +74,7 @@ def get_ipfs_hash_from_vote_description(description: str):
     return response.json()["Hash"]
 
 
-def get_vote_description_from_ifps_hash(ipfs_hash: str):
+def get_description_from_ipfs_hash(ipfs_hash: str):
     response = requests.post(
         f"https://ipfs.infura.io:5001/api/v0/get?arg={ipfs_hash}",
         auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
@@ -104,18 +109,26 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     aragon = ape.project.Voting.at(target["voting"])
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
-    evm_script = prepare_evm_script(target, actions)
+    evm_script = prepare_vote_script(target, actions)
     logger.info(f"EVM script: {evm_script}")
 
     tx = aragon.newVote(
         evm_script,
-        f"ipfs:{get_ipfs_hash_from_vote_description(description)}",
+        f"ipfs:{get_ipfs_hash_from_description(description)}",
         False,
         False,
         sender=vote_creator,
     )
 
     return tx
+
+
+def get_vote_script(vote_id: str, target: str) -> str:
+    voting_contract_address = DAO_VOTING_CONTRACTS[target]
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+    vote = voting_contract.getVote(vote_id)
+    script = vote["script"]
+    return script
 
 
 def decode_vote_script(script):
@@ -197,3 +210,25 @@ def format_fn_inputs(inputs_with_names):
     name, arg = inputs_with_names[-1]
     formatted_args += f"    └─ [bold]{name}[/]: [yellow]{arg}[/]"
     return formatted_args
+
+
+def get_ipfs_hash_from_vote_id(target, vote_id):
+    voting_contract_address = DAO_VOTING_CONTRACTS[target]
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+    snapshot_block = voting_contract.getVote(vote_id)["snapshotBlock"]
+    vote_events = voting_contract.StartVote.query(
+        "voteId",
+        "metadata",
+        start_block=snapshot_block - 1,
+        stop_block=snapshot_block + 1,
+    )
+    vote_row = vote_events.loc[vote_events["voteId"] == vote_id]
+    ipfs_hash = vote_row["metadata"].iloc[0]
+    ipfs_hash = ipfs_hash[5:]
+    return ipfs_hash
+
+
+def get_description_from_vote_id(vote_id, target):
+    ipfs_hash = get_ipfs_hash_from_vote_id(target, vote_id)
+    description = get_description_from_ipfs_hash(ipfs_hash)
+    return description
