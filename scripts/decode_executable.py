@@ -3,7 +3,6 @@ import warnings
 
 import ape
 import click
-from curve_dao.decoder_utils import decode_input
 from curve_dao.ipfs import get_description_from_vote_id
 from curve_dao.vote_utils import decode_vote_script, get_vote_script
 from rich.console import Console as RichConsole

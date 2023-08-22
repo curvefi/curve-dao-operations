@@ -1,11 +1,9 @@
 import json
 import os
-import sys
-from typing import Dict, List
+from typing import Dict
 
 import ape
 import requests
-from ape.logging import logger
 
 from .addresses import get_dao_voting_contract
 

@@ -1,9 +1,7 @@
-import json
 import warnings
 from typing import Dict, List, Tuple
 
 import ape
-import requests
 from ape.logging import logger
 
 from .addresses import get_dao_voting_contract
