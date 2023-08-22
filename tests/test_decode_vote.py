@@ -1,8 +1,10 @@
 import ape
 import pytest
 from curve_dao.addresses import CURVE_DAO_OWNERSHIP
-from curve_dao.modules.smartwallet_checker import (SMARTWALLET_CHECKER,
-                                                   whitelist_vecrv_lock)
+from curve_dao.modules.smartwallet_checker import (
+    SMARTWALLET_CHECKER,
+    whitelist_vecrv_lock,
+)
 from curve_dao.simulate import simulate
 from curve_dao.vote_utils import decode_vote_script, get_vote_script, make_vote
 
