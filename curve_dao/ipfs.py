@@ -35,12 +35,14 @@ def get_description_from_ipfs_hash(ipfs_hash: str):
             auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
             timeout=5,
         )
+        response.raise_for_status()
     except requests.Timeout:
         return "IPFS timed out.  Possibly the description is no longer pinned."
     except requests.ConnectionError as e:
         return f"IPFS connection error: {e}"
+    except requests.HTTPError as e:
+        return f"IPFS request error: {e}"
 
-    response.raise_for_status()
     response_string = response.content.decode("utf-8")
     json_string = []
     in_json = False
