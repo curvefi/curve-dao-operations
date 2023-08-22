@@ -1,5 +1,6 @@
 import ape
 import pytest
+
 from curve_dao.addresses import CRV, CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAM, VOTING_ESCROW
 
 

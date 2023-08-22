@@ -1,6 +1,7 @@
 import ape
 import click
 from ape.logging import logger
+
 from curve_dao import make_vote
 from curve_dao.addresses import get_dao_voting_contract
 from curve_dao.modules.smartwallet_checker import whitelist_vecrv_lock

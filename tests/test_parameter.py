@@ -1,5 +1,6 @@
 import ape
 import pytest
+
 from curve_dao.addresses import (
     CRYPTOSWAP_OWNER_PROXY,
     CURVE_DAO_OWNERSHIP,

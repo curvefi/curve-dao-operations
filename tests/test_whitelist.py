@@ -1,5 +1,6 @@
 import ape
 import pytest
+
 from curve_dao.addresses import CURVE_DAO_OWNERSHIP
 from curve_dao.modules.smartwallet_checker import (
     SMARTWALLET_CHECKER,
