@@ -29,10 +29,17 @@ def get_ipfs_hash_from_description(description: str):
 
 
 def get_description_from_ipfs_hash(ipfs_hash: str):
-    response = requests.post(
-        f"https://ipfs.infura.io:5001/api/v0/get?arg={ipfs_hash}",
-        auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
-    )
+    try:
+        response = requests.post(
+            f"https://ipfs.infura.io:5001/api/v0/get?arg={ipfs_hash}",
+            auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
+            timeout=5,
+        )
+    except requests.Timeout:
+        return "IPFS timed out.  Possibly the description is no longer pinned."
+    except requests.ConnectionError as e:
+        return f"IPFS connection error: {e}"
+
     response.raise_for_status()
     response_string = response.content.decode("utf-8")
     json_string = []
