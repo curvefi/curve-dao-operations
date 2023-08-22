@@ -35,3 +35,10 @@ requires = ["setuptools", "wheel"]
 
 [tool.setuptools.packages.find]
 include = ["curve_dao*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
