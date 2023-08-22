@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Dict
 
 import ape
 import requests
