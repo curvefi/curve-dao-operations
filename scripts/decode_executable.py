@@ -29,23 +29,23 @@ def cli():
 )
 @ape.cli.network_option()
 @click.option(
-    "--target",
+    "--vote-type",
     "-t",
     type=click.Choice(["ownership", "parameter"]),
     required=True,
 )
-@click.option("--vote_id", "-v", type=int, default=0)
-def decode(network, target: str, vote_id: int):
+@click.option("--vote-id", "-v", type=int, default=0)
+def decode(network, vote_type: str, vote_id: int):
 
-    RICH_CONSOLE.log(f"Decoding {target} VoteID: {vote_id}")
+    RICH_CONSOLE.log(f"Decoding {vote_type} VoteID: {vote_id}")
 
     # get script from voting data:
-    script = get_vote_script(vote_id, target)
+    script = get_vote_script(vote_id, vote_type)
     if not script:
         RICH_CONSOLE.log("[red] VoteID not found in any DAO voting contract [/red]")
         return
 
-    description = get_description_from_vote_id(vote_id, target)
+    description = get_description_from_vote_id(vote_id, vote_type)
     RICH_CONSOLE.log(description)
 
     votes = decode_vote_script(script)
