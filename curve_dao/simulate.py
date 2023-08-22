@@ -3,7 +3,7 @@ import pprint
 import ape
 from ape.logging import logger
 
-from curve_dao import CONVEX_VOTERPROXY
+from .addresses import CONVEX_VOTERPROXY
 
 
 def simulate(vote_id: int, voting_contract: str):

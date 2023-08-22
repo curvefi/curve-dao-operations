@@ -15,7 +15,6 @@ except ImportError:
     from eth_abi import decode as decode_abi
 
 
-
 def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> List:
     types_list = []
     if substitutions is None:

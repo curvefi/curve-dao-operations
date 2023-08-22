@@ -1,8 +1,8 @@
 import ape
 import click
 from ape.logging import logger
-
-from curve_dao import make_vote, select_target
+from curve_dao import make_vote
+from curve_dao.addresses import get_dao_voting_contract
 from curve_dao.modules.smartwallet_checker import whitelist_vecrv_lock
 
 
@@ -22,7 +22,7 @@ def cli():
 @click.option("--description", "-d", type=str, required=True)
 def whitelist(network, account, addr, description):
 
-    target = select_target("ownership")
+    target = get_dao_voting_contract("ownership")
     tx = make_vote(
         target=target,
         actions=[whitelist_vecrv_lock(addr)],
