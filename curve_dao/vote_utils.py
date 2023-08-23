@@ -32,10 +32,8 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
     for address, fn_name, *args in actions:
         contract = ape.Contract(address)
         fn = getattr(contract, fn_name)
-        calldata = fn.as_transaction(*args, sender=agent).data
-        agent_calldata = agent.execute.as_transaction(
-            address, 0, calldata, sender=voting
-        ).data
+        calldata = bytes(fn.encode_input(*args))
+        agent_calldata = bytes(agent.execute.encode_input(address, 0, calldata))
         length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
         evm_script = (
             evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
