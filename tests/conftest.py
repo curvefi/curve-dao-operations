@@ -34,8 +34,12 @@ def vote_deployer():
     """
     user = ape.accounts.test_accounts[0]
     crv_whale = ape.accounts["0x7a16ff8270133f063aab6c9977183d9e72835428"]
+    # We seed the whale with lotsa ETH just in case.
+    crv_whale.balance += 100 * 10**18
+
     crv_token = ape.Contract(CRV)
     voting_escrow = ape.Contract(VOTING_ESCROW)
+
     # greater than 2500 so we can avoid fiddly issues
     amount = 3000 * 10**18
     crv_token.transfer(user.address, amount, sender=crv_whale)
