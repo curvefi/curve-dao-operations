@@ -1,7 +1,11 @@
 import ape
 import pytest
 
-from curve_dao import CRYPTOSWAP_OWNER_PROXY, CURVE_DAO_OWNERSHIP, CURVE_DAO_PARAM
+from curve_dao.addresses import (
+    CRYPTOSWAP_OWNER_PROXY,
+    CURVE_DAO_OWNERSHIP,
+    CURVE_DAO_PARAM,
+)
 from curve_dao.simulate import simulate
 from curve_dao.vote_utils import make_vote
 

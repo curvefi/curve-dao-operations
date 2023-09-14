@@ -78,7 +78,7 @@ Input args:
 An example of its usage is show in the following:
 
 ```
-% ape run decode_executable decode --vote_id 223 --target ownership
+$ ape run decode_executable decode --vote-type ownership --vote-id 223
 ```
 
 Output:

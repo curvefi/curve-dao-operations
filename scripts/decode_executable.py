@@ -5,37 +5,12 @@ import ape
 import click
 from rich.console import Console as RichConsole
 
-from curve_dao.decoder_utils import decode_input
+from curve_dao.ipfs import get_description_from_vote_id
+from curve_dao.vote_utils import decode_vote_script, get_vote_script
 
 warnings.filterwarnings("ignore")
 
 RICH_CONSOLE = RichConsole(file=sys.stdout)
-DAO_VOTING_CONTRACTS = {
-    "ownership": "0xE478de485ad2fe566d49342Cbd03E49ed7DB3356",
-    "parameter": "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
-    "emergency": "0x1115c9b3168563354137cdc60efb66552dd50678",
-}
-
-
-def get_evm_script(vote_id: str, voting_contract: str) -> str:
-    return ape.project.Voting.at(voting_contract).getVote(vote_id)["script"]
-
-
-def format_fn_inputs(abi, inputs):
-    if len(inputs) == 0:
-        return ""
-
-    if len(inputs) == 1:
-        argname = abi.inputs[0].name
-        return f"    └─ [bold]{argname}[/]: [yellow]{inputs[-1]}[/]"
-
-    formatted_args = ""
-    for i in range(len(inputs) - 1):
-        argname = abi.inputs[i].name
-        formatted_args += f"    ├─ [bold]{argname}[/]: [yellow]{inputs[i]}[/]\n"
-    argname = abi.inputs[-1].name
-    formatted_args += f"    └─ [bold]{argname}[/]: [yellow]{inputs[-1]}[/]"
-    return formatted_args
 
 
 @click.group(
@@ -54,56 +29,26 @@ def cli():
 )
 @ape.cli.network_option()
 @click.option(
-    "--target",
+    "--vote-type",
     "-t",
     type=click.Choice(["ownership", "parameter"]),
     required=True,
 )
-@click.option("--vote_id", "-v", type=int, default=0)
-def decode_vote(network, target: str, vote_id: int):
+@click.option("--vote-id", "-v", type=int, default=0)
+def decode(network, vote_type: str, vote_id: int):
 
-    RICH_CONSOLE.log(f"Decoding {target} VoteID: {vote_id}")
+    RICH_CONSOLE.log(f"Decoding {vote_type} VoteID: {vote_id}")
 
     # get script from voting data:
-    script = get_evm_script(vote_id, DAO_VOTING_CONTRACTS[target])
+    script = get_vote_script(vote_id, vote_type)
     if not script:
         RICH_CONSOLE.log("[red] VoteID not found in any DAO voting contract [/red]")
         return
-    idx = 4
 
-    while idx < len(script):
+    description = get_description_from_vote_id(vote_id, vote_type)
+    RICH_CONSOLE.log(description)
 
-        # get target contract address:
-        target = ape.Contract(script[idx : idx + 20])
-        idx += 20
-
-        length = int(script[idx : idx + 4].hex(), 16)
-        idx += 4
-
-        # calldata to execute for the dao:
-        calldata = script[idx : idx + length]
-        idx += length
-
-        fn, inputs = decode_input(target, calldata)
-
-        # print decoded vote:
-        if calldata[:4].hex() == "0xb61d27f6":
-
-            agent_target = ape.Contract(inputs[0])
-            fn, inputs = decode_input(agent_target, inputs[2])
-            formatted_inputs = format_fn_inputs(fn, inputs)
-            RICH_CONSOLE.log(
-                f"Call via agent: [yellow]{target}[/]\n"
-                f" ├─ [bold]To[/]: [green]{agent_target}[/]\n"
-                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
-                f" └─ [bold]Inputs[/]: \n{formatted_inputs}\n"
-            )
-
-        else:
-
-            RICH_CONSOLE.log(
-                f"Direct call\n "
-                f" ├─ [bold]To[/]: [green]{target}[/]\n"
-                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
-                f" └─ [bold]Inputs[/]: {inputs}\n"
-            )
+    votes = decode_vote_script(script)
+    for vote in votes:
+        formatted_output = vote["formatted_output"]
+        RICH_CONSOLE.log(formatted_output)
