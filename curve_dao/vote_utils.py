@@ -73,11 +73,14 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
 
 
 def get_vote_script(vote_id: str, vote_type: str) -> str:
-    voting_contract_address = get_dao_voting_contract(vote_type)
-    voting_contract = ape.project.Voting.at(voting_contract_address)
-    vote = voting_contract.getVote(vote_id)
-    script = vote["script"]
-    return script
+    try:
+        voting_contract_address = get_dao_voting_contract(vote_type)
+        voting_contract = ape.project.Voting.at(voting_contract_address)
+        vote = voting_contract.getVote(vote_id)                         
+        script = vote["script"]
+        return script
+    except:
+        return False 
 
 
 def decode_vote_script(script):
