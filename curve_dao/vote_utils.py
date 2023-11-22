@@ -83,6 +83,17 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
         return False 
 
 
+def get_vote_data(vote_id: str, vote_type: str) -> str:
+    voting_contract_address = get_dao_voting_contract(vote_type)
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+    func = voting_contract.getVote(vote_id)                         
+    data = [] 
+    data.append(func["yea"] / 1e18)
+    data.append(func["nay"] / 1e18)
+    data.append(func["votingPower"] / 1e18)
+    return data
+
+
 def decode_vote_script(script):
     idx = 4
 
@@ -136,6 +147,31 @@ def decode_vote_script(script):
         votes.append(vote)
 
     return votes
+
+
+def format_data(data, vote_type):
+
+    yes = round(data[0], 2)
+    no = round(data[1], 2)
+    quorum = round((data[0] + data[1]) / data[2] * 100, 2)
+
+    if vote_type == "ownership":
+        results_output = (
+            f"[bold]Results[/]:\n"
+            f" ├─ [green]YES[/]: {no}\n"
+            f" ├─ [red]NO[/]: {yes}\n"
+            f" └─ [black]Quorum[/]: {quorum}% (51% required)\n"
+        )
+        return results_output
+    
+    elif vote_type == "parameter":
+        results_output = (
+            f"[bold]Results[/]:\n"
+            f" ├─ [green]YES[/]: {yes}\n"
+            f" ├─ [red]NO[/]: {no}\n"
+            f" └─ [black]Quorum[/]: {quorum}% (31% required)\n"
+        )
+        return results_output
 
 
 def get_inputs_with_names(abi, inputs):

@@ -6,7 +6,7 @@ import click
 from rich.console import Console as RichConsole
 
 from curve_dao.ipfs import get_description_from_vote_id
-from curve_dao.vote_utils import decode_vote_script, get_vote_script
+from curve_dao.vote_utils import decode_vote_script, get_vote_script, get_vote_data, format_data
 
 warnings.filterwarnings("ignore")
 
@@ -34,7 +34,14 @@ def cli():
     type=click.Choice(["ownership", "parameter"]),
     required=True,
 )
-@click.option("--vote-id", "-v", type=int, default=0)
+
+@click.option(
+    "--vote-id", 
+    "-v", 
+    type=int, 
+    required=True
+)
+
 def decode(network, vote_type: str, vote_id: int):
 
     RICH_CONSOLE.log(f"Decoding {vote_type} VoteID: {vote_id}")
@@ -52,3 +59,7 @@ def decode(network, vote_type: str, vote_id: int):
     for vote in votes:
         formatted_output = vote["formatted_output"]
         RICH_CONSOLE.log(formatted_output)
+
+    data = get_vote_data(vote_id, vote_type)
+    results = format_data(data, vote_type)
+    RICH_CONSOLE.log(results)
