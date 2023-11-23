@@ -1,5 +1,6 @@
 import warnings
 from typing import Dict, List, Tuple
+from datetime import datetime
 
 import ape
 from ape.logging import logger
@@ -91,8 +92,11 @@ def get_vote_data(vote_id: str, vote_type: str) -> str:
     data.append(func["yea"] / 1e18)
     data.append(func["nay"] / 1e18)
     data.append(func["votingPower"] / 1e18)
-    return data
+    data.append(func["open"])
+    data.append(func["executed"])
+    data.append(func["startDate"])
 
+    return data
 
 def decode_vote_script(script):
     idx = 4
@@ -154,21 +158,39 @@ def format_data(data, vote_type):
     yes = round(data[0], 2)
     no = round(data[1], 2)
     quorum = round((data[0] + data[1]) / data[2] * 100, 2)
+    if data[3] == True:
+        state = "vote ongoing"
+    else:
+        if data[4] == True:
+            state = "vote closed & executed!"
+        else:
+            state = "vote closed & executable if passed"
+
+
+    start = datetime.utcfromtimestamp(data[5])
+    start = start.strftime("%Y-%m-%d %H:%M:%S")
+    end = data[5] + 604800
+    end = datetime.utcfromtimestamp(end)
+    end = end.strftime("%Y-%m-%d %H:%M:%S")
 
     if vote_type == "ownership":
         results_output = (
-            f"[bold]Results[/]:\n"
-            f" ├─ [green]YES[/]: {no}\n"
-            f" ├─ [red]NO[/]: {yes}\n"
-            f" └─ [black]Quorum[/]: {quorum}% (51% required)\n"
+            f"[bold]Data: ({state})[/]:\n"
+            f" ├─ [green]YES[/]: {yes}\n"
+            f" ├─ [red]NO[/]: {no}\n"
+            f" ├─ [black]Quorum[/]: {quorum}% (51% required)\n"
+            f" ├─ [black]START[/]: {start}\n"
+            f" └─ [black]END[/]: {end}\n"
         )
         return results_output
     
     elif vote_type == "parameter":
         results_output = (
-            f"[bold]Results[/]:\n"
+            f"[bold]Data: ({state})[/]:\n"
             f" ├─ [green]YES[/]: {yes}\n"
             f" ├─ [red]NO[/]: {no}\n"
+            f" ├─ [black]START[/]: {start}\n"
+            f" ├─ [black]END[/]: {end}\n"
             f" └─ [black]Quorum[/]: {quorum}% (31% required)\n"
         )
         return results_output
