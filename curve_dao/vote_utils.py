@@ -158,6 +158,7 @@ def format_data(data, vote_type):
     yes = round(data[0], 2)
     no = round(data[1], 2)
     quorum = round((data[0] + data[1]) / data[2] * 100, 2)
+    support = round((data[0] - data[1]) / (data[0] + data[1]) * 100 , 2)
     if data[3] == True:
         state = "vote ongoing"
     else:
@@ -176,22 +177,24 @@ def format_data(data, vote_type):
     if vote_type == "ownership":
         results_output = (
             f"[bold]Data: ({state})[/]:\n"
+            f" ├─ [black]START[/]: {start}\n"
+            f" ├─ [black]END[/]: {end}\n"
             f" ├─ [green]YES[/]: {yes}\n"
             f" ├─ [red]NO[/]: {no}\n"
-            f" ├─ [black]Quorum[/]: {quorum}% (51% required)\n"
-            f" ├─ [black]START[/]: {start}\n"
-            f" └─ [black]END[/]: {end}\n"
+            f" ├─ [black]Support[/]: {support}% (51% required)\n"
+            f" └─ [black]Quorum[/]: {quorum}% (30% required)\n"
         )
         return results_output
     
     elif vote_type == "parameter":
         results_output = (
             f"[bold]Data: ({state})[/]:\n"
-            f" ├─ [green]YES[/]: {yes}\n"
-            f" ├─ [red]NO[/]: {no}\n"
             f" ├─ [black]START[/]: {start}\n"
             f" ├─ [black]END[/]: {end}\n"
-            f" └─ [black]Quorum[/]: {quorum}% (31% required)\n"
+            f" ├─ [green]YES[/]: {yes}\n"
+            f" ├─ [red]NO[/]: {no}\n"
+            f" ├─ [black]Support[/]: {support}% (60% required)\n"
+            f" └─ [black]Quorum[/]: {quorum}% (15% required)\n"
         )
         return results_output
 
