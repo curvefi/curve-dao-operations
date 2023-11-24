@@ -106,6 +106,14 @@ Call via agent: 0x40907540d8a6C65c637785e8f8B742ae6b0b9968
  └─ Inputs:
     ├─ _gauge: 0x16C2beE6f55dAB7F494dBa643fF52ef2D47FBA36
     └─ _is_killed: True
+
+Results: Vote Passed (Execution Status: Executed)
+├─ Voting Start Time: 2022-10-18 14:25:47
+├─ Voting End Time: 2022-10-25 14:25:47
+├─ Votes For: 260936423.49
+├─ Votes Against: 0.0
+├─ Support: 100.0% (Required: 51%)
+└─ Quorum: 49.25% (Minimum: 30%)
 ```
 
 # How to contribute:
