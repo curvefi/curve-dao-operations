@@ -171,7 +171,7 @@ def format_data(data, vote_type):
     required_quorum = 30 if vote_type == "ownership" else 15
 
     if data[3]:  # Voting is ongoing
-        pass_status = "[bold][yellow]Voting Ongoing[/][/]"
+        pass_status = "[yellow]Voting Ongoing[/]"
     else:  # Voting is closed
         if total_votes == 0 or total_voting_power == 0:
             pass_status = "[red]Vote Invalid: No Votes[/]"
@@ -192,12 +192,12 @@ def format_data(data, vote_type):
 
     results_output = (
         f"[bold]Results[/]: {pass_status}\n"
-        f" ├─ [bold]Voting Start Time[/]: {start}\n"
-        f" ├─ [bold]Voting End Time[/]: {end}\n"
+        f" ├─ [grey]Voting Start Time[/]: {start}\n"
+        f" ├─ [grey]Voting End Time[/]: {end}\n"
         f" ├─ [green]Votes For[/]: {yes}\n"
         f" ├─ [red]Votes Against[/]: {no}\n"
-        f" ├─ [bold][blue]Support[/][/]: {support}% (Required: {required_support}%)\n"
-        f" └─ [bold][purple]Quorum[/][/]: {quorum}% (Minimum: {required_quorum}%)\n"
+        f" ├─ [blue]Support[/]: {support}% (Required: {required_support}%)\n"
+        f" └─ [purple]Quorum[/]: {quorum}% (Minimum: {required_quorum}%)\n"
     )
     return results_output
 
