@@ -154,49 +154,52 @@ def decode_vote_script(script):
 
 
 def format_data(data, vote_type):
-
     yes = round(data[0], 2)
     no = round(data[1], 2)
-    quorum = round((data[0] + data[1]) / data[2] * 100, 2)
-    support = round((data[0] - data[1]) / (data[0] + data[1]) * 100 , 2)
-    if data[3] == True:
-        state = "vote ongoing"
+    total_votes = data[0] + data[1]
+    total_voting_power = data[2]
+
+    # Handle edge case where there are no votes at all
+    if total_votes == 0 or total_voting_power == 0:
+        quorum = 0
+        support = 0
     else:
-        if data[4] == True:
-            state = "vote closed & executed!"
+        quorum = round(total_votes / total_voting_power * 100, 2)
+        support = round(yes / total_votes * 100, 2)
+
+    required_support = 51 if vote_type == "ownership" else 30
+    required_quorum = 30 if vote_type == "ownership" else 15
+
+    if data[3]:  # Voting is ongoing
+        pass_status = "[bold][yellow]Voting Ongoing[/][/]"
+    else:  # Voting is closed
+        if total_votes == 0 or total_voting_power == 0:
+            pass_status = "[red]Vote Invalid: No Votes[/]"
+        elif support >= required_support and quorum >= required_quorum:
+            pass_status = "[green]Vote Passed[/]"
         else:
-            state = "vote closed & executable if passed"
+            failure_reason = ""
+            if support < required_support and quorum < required_quorum:
+                failure_reason = "Both Support and Quorum Not Met"
+            elif support < required_support:
+                failure_reason = "Support Not Met"
+            else:
+                failure_reason = "Quorum Not Met"
+            pass_status = f"[red]Vote Failed: {failure_reason}[/]"
+            
+    start = datetime.utcfromtimestamp(data[5]).strftime("%Y-%m-%d %H:%M:%S")
+    end = datetime.utcfromtimestamp(data[5] + 604800).strftime("%Y-%m-%d %H:%M:%S")
 
-
-    start = datetime.utcfromtimestamp(data[5])
-    start = start.strftime("%Y-%m-%d %H:%M:%S")
-    end = data[5] + 604800
-    end = datetime.utcfromtimestamp(end)
-    end = end.strftime("%Y-%m-%d %H:%M:%S")
-
-    if vote_type == "ownership":
-        results_output = (
-            f"[bold]Data: ({state})[/]:\n"
-            f" ├─ [black]START[/]: {start}\n"
-            f" ├─ [black]END[/]: {end}\n"
-            f" ├─ [green]YES[/]: {yes}\n"
-            f" ├─ [red]NO[/]: {no}\n"
-            f" ├─ [black]Support[/]: {support}% (51% required)\n"
-            f" └─ [black]Quorum[/]: {quorum}% (30% required)\n"
-        )
-        return results_output
-    
-    elif vote_type == "parameter":
-        results_output = (
-            f"[bold]Data: ({state})[/]:\n"
-            f" ├─ [black]START[/]: {start}\n"
-            f" ├─ [black]END[/]: {end}\n"
-            f" ├─ [green]YES[/]: {yes}\n"
-            f" ├─ [red]NO[/]: {no}\n"
-            f" ├─ [black]Support[/]: {support}% (60% required)\n"
-            f" └─ [black]Quorum[/]: {quorum}% (15% required)\n"
-        )
-        return results_output
+    results_output = (
+        f"[bold]Results[/]: {pass_status}\n"
+        f" ├─ [bold]Voting Start Time[/]: {start}\n"
+        f" ├─ [bold]Voting End Time[/]: {end}\n"
+        f" ├─ [green]Votes For[/]: {yes}\n"
+        f" ├─ [red]Votes Against[/]: {no}\n"
+        f" ├─ [bold][blue]Support[/][/]: {support}% (Required: {required_support}%)\n"
+        f" └─ [bold][purple]Quorum[/][/]: {quorum}% (Minimum: {required_quorum}%)\n"
+    )
+    return results_output
 
 
 def get_inputs_with_names(abi, inputs):
