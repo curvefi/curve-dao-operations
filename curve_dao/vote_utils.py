@@ -1,6 +1,6 @@
 import warnings
-from typing import Dict, List, Tuple
 from datetime import datetime
+from typing import Dict, List, Tuple
 
 import ape
 from ape.logging import logger
@@ -77,18 +77,18 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
     try:
         voting_contract_address = get_dao_voting_contract(vote_type)
         voting_contract = ape.project.Voting.at(voting_contract_address)
-        vote = voting_contract.getVote(vote_id)                         
+        vote = voting_contract.getVote(vote_id)
         script = vote["script"]
         return script
     except:
-        return False 
+        return False
 
 
 def get_vote_data(vote_id: str, vote_type: str) -> str:
     voting_contract_address = get_dao_voting_contract(vote_type)
     voting_contract = ape.project.Voting.at(voting_contract_address)
-    func = voting_contract.getVote(vote_id)                         
-    data = [] 
+    func = voting_contract.getVote(vote_id)
+    data = []
     data.append(func["yea"] / 1e18)
     data.append(func["nay"] / 1e18)
     data.append(func["votingPower"] / 1e18)
@@ -97,6 +97,7 @@ def get_vote_data(vote_id: str, vote_type: str) -> str:
     data.append(func["startDate"])
 
     return data
+
 
 def decode_vote_script(script):
     idx = 4
@@ -177,8 +178,12 @@ def format_data(data, vote_type):
             pass_status = "[red]Vote Invalid: No Votes[/]"
         elif support >= required_support and quorum >= required_quorum:
             # Check if the vote has been executed
-            execution_status = "[green]Executed[/]" if data[4] else "[red]Not Executed[/]"
-            pass_status = f"[green]Vote Passed[/] ([grey]Execution Status[/]: {execution_status})"
+            execution_status = (
+                "[green]Executed[/]" if data[4] else "[red]Not Executed[/]"
+            )
+            pass_status = (
+                f"[green]Vote Passed[/] ([grey]Execution Status[/]: {execution_status})"
+            )
         else:
             if support < required_support and quorum < required_quorum:
                 failure_reason = "Both Support and Quorum Not Met"
