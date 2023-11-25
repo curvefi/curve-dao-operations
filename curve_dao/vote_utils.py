@@ -80,7 +80,7 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
         vote = voting_contract.getVote(vote_id)
         script = vote["script"]
         return script
-    except:
+    except Exception:
         return False
 
 
