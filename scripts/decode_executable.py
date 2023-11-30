@@ -7,10 +7,10 @@ from rich.console import Console as RichConsole
 
 from curve_dao.ipfs import get_description_from_vote_id
 from curve_dao.vote_utils import (
-    get_vote_script,
+    decode_vote_data,
     decode_vote_script,
     get_vote_data,
-    decode_vote_data,
+    get_vote_script,
 )
 
 warnings.filterwarnings("ignore")
@@ -60,7 +60,7 @@ def decode(network, vote_type: str, vote_id: int):
 
     # get vote data
     data = get_vote_data(vote_id, vote_type)
-    
+
     # decode vote data
     results = decode_vote_data(data, vote_type)
     RICH_CONSOLE.log(results["formatted_output"])
