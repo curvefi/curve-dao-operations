@@ -171,6 +171,8 @@ def format_data(data, vote_type):
     required_support = 51 if vote_type == "ownership" else 30
     required_quorum = 30 if vote_type == "ownership" else 15
 
+    results = []
+
     if data[3]:  # Voting is ongoing
         pass_status = "[yellow]Voting Ongoing[/]"
     else:  # Voting is closed
@@ -196,7 +198,7 @@ def format_data(data, vote_type):
     start = datetime.utcfromtimestamp(data[5]).strftime("%Y-%m-%d %H:%M:%S")
     end = datetime.utcfromtimestamp(data[5] + 604800).strftime("%Y-%m-%d %H:%M:%S")
 
-    results_output = (
+    formatted_output = (
         f"[bold]Results[/]: {pass_status}\n"
         f" ├─ [grey]Voting Start Time[/]: {start}\n"
         f" ├─ [grey]Voting End Time[/]: {end}\n"
@@ -205,7 +207,18 @@ def format_data(data, vote_type):
         f" ├─ [blue]Support[/]: {support}% (Required: {required_support}%)\n"
         f" └─ [purple]Quorum[/]: {quorum}% (Minimum: {required_quorum}%)\n"
     )
-    return results_output
+
+    results = {
+        "start": {start},
+        "end": {end},
+        "yes": {yes},
+        "no": {no},
+        "support": {support},
+        "quorum": {quorum},
+        "formatted_output": formatted_output,
+    }
+
+    return results
 
 
 def get_inputs_with_names(abi, inputs):
