@@ -154,7 +154,7 @@ def decode_vote_script(script):
     return votes
 
 
-def format_data(data, vote_type):
+def decode_vote_data(data, vote_type):
     yes = round(data[0], 2)
     no = round(data[1], 2)
     total_votes = data[0] + data[1]
