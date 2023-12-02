@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 import ape
+from ape.exceptions import ContractLogicError
 from ape.logging import logger
 
 from .addresses import get_dao_voting_contract
@@ -10,6 +11,12 @@ from .decoder_utils import decode_input
 from .ipfs import get_ipfs_hash_from_description
 
 warnings.filterwarnings("ignore")
+
+
+class MissingVote(Exception):
+    """Exception raised when a vote ID is invalid."""
+
+    pass
 
 
 def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
@@ -80,8 +87,9 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
         vote = voting_contract.getVote(vote_id)
         script = vote["script"]
         return script
-    except Exception:
-        return False
+    except ContractLogicError as e:
+        if "VOTING_NO_VOTE" in str(e):
+            raise MissingVote(f"Vote ID {vote_id} not found")
 
 
 def get_vote_data(vote_id: str, vote_type: str) -> str:

@@ -7,6 +7,7 @@ from rich.console import Console as RichConsole
 
 from curve_dao.ipfs import get_description_from_vote_id
 from curve_dao.vote_utils import (
+    MissingVote,
     decode_vote_data,
     decode_vote_script,
     get_vote_data,
@@ -44,10 +45,12 @@ def decode(network, vote_type: str, vote_id: int):
 
     RICH_CONSOLE.log(f"Decoding {vote_type} VoteID: {vote_id}")
 
-    # get script from voting data:
-    script = get_vote_script(vote_id, vote_type)
-    if not script:
-        RICH_CONSOLE.log("[red] VoteID not found in any DAO voting contract [/red]")
+    try:
+        script = get_vote_script(vote_id, vote_type)
+    except MissingVote:
+        RICH_CONSOLE.log(
+            f"[red] VoteID not found in the {vote_type} DAO voting contract [/red]"
+        )
         return
 
     description = get_description_from_vote_id(vote_id, vote_type)
