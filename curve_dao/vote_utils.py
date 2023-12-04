@@ -95,16 +95,11 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
 def get_vote_data(vote_id: str, vote_type: str) -> str:
     voting_contract_address = get_dao_voting_contract(vote_type)
     voting_contract = ape.project.Voting.at(voting_contract_address)
-    func = voting_contract.getVote(vote_id)
-    data = []
-    data.append(func["yea"] / 1e18)
-    data.append(func["nay"] / 1e18)
-    data.append(func["votingPower"] / 1e18)
-    data.append(func["open"])
-    data.append(func["executed"])
-    data.append(func["startDate"])
-
-    return data
+    vote_data = voting_contract.getVote(vote_id)
+    return [
+        vote_data[key]
+        for key in ["yea", "nay", "votingPower", "open", "executed", "startDate"]
+    ]
 
 
 def decode_vote_script(script):
@@ -163,21 +158,23 @@ def decode_vote_script(script):
 
 
 def decode_vote_data(data, vote_type):
-    yes = round(data[0], 2)
-    no = round(data[1], 2)
+    yes = round(data[0] / 1e18, 2)
+    no = round(data[1] / 1e18, 2)
     total_votes = data[0] + data[1]
     total_voting_power = data[2]
+
+    VOTE_TIME = 604800
 
     # Handle edge case where there are no votes at all
     if total_votes == 0 or total_voting_power == 0:
         quorum = 0
         support = 0
     else:
-        quorum = round(total_votes / total_voting_power * 100, 2)
-        support = round(yes / total_votes * 100, 2)
+        quorum = total_votes / total_voting_power
+        support = data[0] / total_votes
 
-    required_support = 51 if vote_type == "ownership" else 30
-    required_quorum = 30 if vote_type == "ownership" else 15
+    required_support = 0.51 if vote_type == "ownership" else 0.30
+    required_quorum = 0.30 if vote_type == "ownership" else 0.15
 
     results = []
 
@@ -204,7 +201,7 @@ def decode_vote_data(data, vote_type):
             pass_status = f"[red]Vote Failed: {failure_reason}[/]"
 
     start = datetime.utcfromtimestamp(data[5]).strftime("%Y-%m-%d %H:%M:%S")
-    end = datetime.utcfromtimestamp(data[5] + 604800).strftime("%Y-%m-%d %H:%M:%S")
+    end = datetime.utcfromtimestamp(data[5] + VOTE_TIME).strftime("%Y-%m-%d %H:%M:%S")
 
     formatted_output = (
         f"[bold]Results[/]: {pass_status}\n"
@@ -212,17 +209,17 @@ def decode_vote_data(data, vote_type):
         f" ├─ [grey]Voting End Time[/]: {end}\n"
         f" ├─ [green]Votes For[/]: {yes}\n"
         f" ├─ [red]Votes Against[/]: {no}\n"
-        f" ├─ [blue]Support[/]: {support}% (Required: {required_support}%)\n"
-        f" └─ [purple]Quorum[/]: {quorum}% (Minimum: {required_quorum}%)\n"
+        f" ├─ [blue]Support[/]: {round(support * 100, 2)}% (Required: {int(required_support * 100)}%)\n"
+        f" └─ [purple]Quorum[/]: {round(quorum * 100, 2)}% (Minimum: {int(required_quorum * 100)}%)\n"
     )
 
     results = {
-        "start": {start},
-        "end": {end},
-        "yes": {yes},
-        "no": {no},
-        "support": {support},
-        "quorum": {quorum},
+        "start": data[5],
+        "end": data[5] + VOTE_TIME,
+        "yes": data[0],
+        "no": data[1],
+        "support": support,
+        "quorum": quorum,
         "formatted_output": formatted_output,
     }
 
