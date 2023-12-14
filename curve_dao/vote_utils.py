@@ -16,8 +16,6 @@ warnings.filterwarnings("ignore")
 class MissingVote(Exception):
     """Exception raised when a vote ID is invalid."""
 
-    pass
-
 
 def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
     """Generates EVM script to be executed by AragonDAO contracts.
@@ -90,16 +88,23 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
     except ContractLogicError as e:
         if "VOTING_NO_VOTE" in str(e):
             raise MissingVote(f"Vote ID {vote_id} not found")
+        else:
+            raise
 
 
 def get_vote_data(vote_id: str, vote_type: str) -> str:
     voting_contract_address = get_dao_voting_contract(vote_type)
     voting_contract = ape.project.Voting.at(voting_contract_address)
     vote_data = voting_contract.getVote(vote_id)
-    return [
-        vote_data[key]
-        for key in ["yea", "nay", "votingPower", "open", "executed", "startDate"]
-    ]
+
+    return {
+        "yea": vote_data["yea"],
+        "nay": vote_data["nay"],
+        "votingPower": vote_data["votingPower"],
+        "open": vote_data["open"],
+        "executed": vote_data["executed"],
+        "startDate": vote_data["startDate"],
+    }
 
 
 def decode_vote_script(script):
@@ -157,11 +162,11 @@ def decode_vote_script(script):
     return votes
 
 
-def decode_vote_data(data, vote_type):
-    yes = round(data[0] / 1e18, 2)
-    no = round(data[1] / 1e18, 2)
-    total_votes = data[0] + data[1]
-    total_voting_power = data[2]
+def decode_vote_data(data: dict, vote_type: str):
+    yes = round(data["yea"] / 1e18, 2)
+    no = round(data["nay"] / 1e18, 2)
+    total_votes = data["yea"] + data["nay"]
+    total_voting_power = data["votingPower"]
 
     VOTE_TIME = 604800
 
@@ -171,14 +176,12 @@ def decode_vote_data(data, vote_type):
         support = 0
     else:
         quorum = total_votes / total_voting_power
-        support = data[0] / total_votes
+        support = data["yea"] / total_votes
 
     required_support = 0.51 if vote_type == "ownership" else 0.30
     required_quorum = 0.30 if vote_type == "ownership" else 0.15
 
-    results = []
-
-    if data[3]:  # Voting is ongoing
+    if data["open"]:  # Voting is ongoing
         pass_status = "[yellow]Voting Ongoing[/]"
     else:  # Voting is closed
         if total_votes == 0 or total_voting_power == 0:
@@ -186,7 +189,7 @@ def decode_vote_data(data, vote_type):
         elif support >= required_support and quorum >= required_quorum:
             # Check if the vote has been executed
             execution_status = (
-                "[green]Executed[/]" if data[4] else "[red]Not Executed[/]"
+                "[green]Executed[/]" if data["executed"] else "[red]Not Executed[/]"
             )
             pass_status = (
                 f"[green]Vote Passed[/] ([grey]Execution Status[/]: {execution_status})"
@@ -200,8 +203,10 @@ def decode_vote_data(data, vote_type):
                 failure_reason = "Quorum Not Met"
             pass_status = f"[red]Vote Failed: {failure_reason}[/]"
 
-    start = datetime.utcfromtimestamp(data[5]).strftime("%Y-%m-%d %H:%M:%S")
-    end = datetime.utcfromtimestamp(data[5] + VOTE_TIME).strftime("%Y-%m-%d %H:%M:%S")
+    start = datetime.utcfromtimestamp(data["startDate"]).strftime("%Y-%m-%d %H:%M:%S")
+    end = datetime.utcfromtimestamp(data["startDate"] + VOTE_TIME).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     formatted_output = (
         f"[bold]Results[/]: {pass_status}\n"
@@ -214,10 +219,13 @@ def decode_vote_data(data, vote_type):
     )
 
     results = {
-        "start": data[5],
-        "end": data[5] + VOTE_TIME,
-        "yes": data[0],
-        "no": data[1],
+        "start": data["startDate"],
+        "end": data["startDate"] + VOTE_TIME,
+        "votingPower": data["votingPower"],
+        "open": data["open"],
+        "executed": data["executed"],
+        "yes": data["yea"],
+        "no": data["nay"],
         "support": support,
         "quorum": quorum,
         "formatted_output": formatted_output,
