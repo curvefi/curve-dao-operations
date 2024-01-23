@@ -1,0 +1,30 @@
+# python
+.python-version
+__pycache__/
+
+# ape
+.build
+
+# pytest
+.pytest_cache
+
+# npm
+node_modules/
+
+# IDE
+.idea
+.vscode/
+
+# virtualenv
+venv/
+
+# Mac
+.DS_Store
+
+# python packaging
+/build
+curve_dao.egg-info/
+
+# vim
+*.swp
+*.swo

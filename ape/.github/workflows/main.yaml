@@ -1,0 +1,38 @@
+name: unitary
+
+on: ["push", "pull_request"]
+
+env:
+  ETHERSCAN_API_KEY: ${{secrets.ETHERSCAN_API_KEY}}
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN }}
+  WEB3_ALCHEMY_API_KEY: ${{secrets.WEB3_ALCHEMY_API_KEY}}
+  IPFS_PROJECT_ID: ${{secrets.IPFS_PROJECT_ID}}
+  IPFS_PROJECT_SECRET: ${{secrets.IPFS_PROJECT_SECRET}}
+
+jobs:
+  unitary:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install Hardhat
+        run: npm ci
+
+      - name: Setup Python 3.10.4
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10.4
+
+      - name: Install Requirements
+        run: >-
+          pip install -r dev-requirements.txt
+          pip install .
+
+      - name: Run Tests
+        run: ape test

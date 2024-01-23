@@ -1,0 +1,26 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+  - repo: https://github.com/PyCQA/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        args: ["-j8", "--ignore=E203,E501,P103,W503,F405"]
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1
+    hooks:
+      - id: isort
+        args: ["--profile", "black"] # solves conflicts between black and isort
+
+default_language_version:
+  python: python3.10
