@@ -1,10 +1,11 @@
 import json
 import os
-
-import ape
 import requests
 
+import boa
+
 from .addresses import get_dao_voting_contract
+
 
 
 def get_ipfs_hash_from_description(description: str):
@@ -56,8 +57,19 @@ def get_description_from_ipfs_hash(ipfs_hash: str):
 
 def get_ipfs_hash_from_vote_id(vote_type, vote_id):
     voting_contract_address = get_dao_voting_contract(vote_type)
-    voting_contract = ape.project.Voting.at(voting_contract_address)
-    snapshot_block = voting_contract.getVote(vote_id)["snapshotBlock"]
+
+    # voting_contract = ape.project.Voting.at(voting_contract_address)
+    #voting = "contracts/Voting.json"
+
+    boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
+
+    voting_contract_address = get_dao_voting_contract(vote_type)
+    voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+
+    # can't do ["snapshotBlock"], need to do [3] instead
+    snapshot_block = voting_contract.getVote(vote_id)[3]
+
+    # how to query events in boa? need this for voteID and metadata
     vote_events = voting_contract.StartVote.query(
         "voteId",
         "metadata",
@@ -74,3 +86,7 @@ def get_description_from_vote_id(vote_id, target):
     ipfs_hash = get_ipfs_hash_from_vote_id(target, vote_id)
     description = get_description_from_ipfs_hash(ipfs_hash)
     return description
+
+
+
+# need to find out how to query events with boa: https://etherscan.io/tx/0x543634439bf556698c487acaf54c8ed4643f7bb68a7c4865380de66656d466bd#eventlog
