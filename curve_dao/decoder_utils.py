@@ -1,13 +1,9 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import ape
-from ape.exceptions import DecodingError
-from ape.utils.abi import Struct
-from eth_abi.exceptions import InsufficientDataBytes
+import boa
+from hexbytes import HexBytes
 from eth_hash.auto import keccak
 from eth_utils import humanize_hash, is_hex_address, to_checksum_address
-from ethpm_types import HexBytes
-from ethpm_types.abi import MethodABI
 
 try:
     from eth_abi import decode_abi
@@ -21,12 +17,12 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
         substitutions = {}
 
     for i in abi_params:
-        if i.type.startswith("tuple"):
+        if i["type"].startswith("tuple"):
             params = get_type_strings(i.components, substitutions)
-            array_size = i.type[5:]
+            array_size = i["type"][5:]
             types_list.append(f"({','.join(params)}){array_size}")
         else:
-            type_str = i.type
+            type_str = i["type"]
             for orig, sub in substitutions.items():
                 if type_str.startswith(orig):
                     type_str = type_str.replace(orig, sub)
@@ -36,8 +32,8 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
 
 
 def build_function_signature(abi: Dict) -> str:
-    types_list = get_type_strings(abi.inputs)
-    return f"{abi.name}({','.join(types_list)})"
+    types_list = get_type_strings(abi["inputs"])
+    return f"{abi["name"]}({','.join(types_list)})"
 
 
 def build_function_selector(abi: Dict) -> str:
@@ -47,17 +43,21 @@ def build_function_selector(abi: Dict) -> str:
 
 def decode_address(raw_address):
     if isinstance(raw_address, int):
-        raw_address = HexBytes(raw_address)
+        raw_address = hex(raw_address)
 
     return to_checksum_address(raw_address)
 
 
+# not working 100%. need to find a solution for Struct!!!
 def decode_value(value):
+
     if isinstance(value, HexBytes):
         try:
             string_value = value.strip(b"\x00").decode("utf8")
             return f"'{string_value}'"
-        except UnicodeDecodeError:
+        
+        # hmmm, except to broad. what to do here?
+        except:
             # Truncate bytes if very long.
             if len(value) > 24:
                 return humanize_hash(value)
@@ -79,44 +79,51 @@ def decode_value(value):
         decoded_values = [decode_value(v) for v in value]
         return decoded_values
 
-    elif isinstance(value, Struct):
+    """elif isinstance(value, Struct):
         decoded_values = {k: decode_value(v) for k, v in value.items()}
-        return decoded_values
+        return decoded_values"""
 
     return value
 
 
+# input here is the abi and calldata[4:]
 def decode_calldata(
-    method: MethodABI,
+    abi,
     raw_data: bytes,
 ) -> List:
-    input_types = [i.canonical_type for i in method.inputs]  # type: ignore
+
+    input_types = [i["type"] for i in abi["inputs"]]  # type: ignore
 
     try:
-
         raw_input_values = decode_abi(input_types, raw_data)
+
         input_values = [decode_value(v) for v in raw_input_values]
 
-    except (DecodingError, InsufficientDataBytes):
-
+    # too broad of an exception
+    except:
         input_values = ["<?>" for _ in input_types]
 
     return input_values
 
 
-def decode_input(
-    contract: ape.Contract, calldata: Union[str, bytes]
+
+# works
+def decode_input(target: str, calldata: bytes
 ) -> Tuple[str, Any]:
 
     if not isinstance(calldata, HexBytes):
         calldata = HexBytes(calldata)
 
     fn_selector = calldata[:4].hex()  # type: ignore
-    abi = next(
+    
+    boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
+    abi = boa.from_etherscan_abi(target, api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+
+    abi = next( 
         (
             i
-            for i in contract.contract_type.abi
-            if i.type == "function" and build_function_selector(i) == fn_selector
+            for i in abi
+            if i["type"] == "function" and build_function_selector(i) == fn_selector
         ),
         None,
     )
