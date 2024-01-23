@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
+import os
 
 import boa
 from hexbytes import HexBytes
@@ -116,8 +117,7 @@ def decode_input(target: str, calldata: bytes
 
     fn_selector = calldata[:4].hex()  # type: ignore
     
-    boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
-    abi = boa.from_etherscan_abi(target, api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+    abi = boa.from_etherscan_abi(target, api_key=os.getenv('ETHERSCAN_API_KEY'))
 
     abi = next( 
         (

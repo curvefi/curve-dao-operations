@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 import sys
 from rich.console import Console as RichConsole
+import os
+from dotenv import load_dotenv
 
 import boa
 
@@ -13,6 +15,8 @@ from .ipfs import get_ipfs_hash_from_description
 warnings.filterwarnings("ignore")
 
 logger = RichConsole(file=sys.stdout)
+
+load_dotenv()
 
 class MissingVote(Exception):
     """Exception raised when a vote ID is invalid."""
@@ -29,7 +33,7 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
     Returns:
         str: Generated EVM script.
     """
-    agent = ape.Contract(target["agent"])
+    """agent = ape.Contract(target["agent"])
     voting = target["voting"]
 
     logger.info(f"Agent Contract: {agent.address}")
@@ -47,7 +51,7 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
             evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
         )
 
-    return evm_script
+    return evm_script"""
 
 
 # not working
@@ -63,7 +67,10 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     Returns:
         str: vote ID of the created vote.
     """
-    aragon = ape.project.Voting.at(target["voting"])
+
+
+
+    """aragon = ape.project.Voting.at(target["voting"])
     assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
     evm_script = prepare_vote_script(target, actions)
@@ -78,16 +85,16 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
         sender=vote_creator,
     )
 
-    return tx
+    return tx"""
 
 
 # working.
 def get_vote_script(vote_id: str, vote_type: str) -> str:
     
     try:
-        boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
+        boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
         voting_contract_address = get_dao_voting_contract(vote_type)
-        voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+        voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
         vote = voting_contract.getVote(vote_id)
         script = vote[9]
         return script
@@ -100,9 +107,8 @@ def get_vote_script(vote_id: str, vote_type: str) -> str:
 # working
 def get_vote_data(vote_id: str, vote_type: str) -> str:
 
-    boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
     voting_contract_address = get_dao_voting_contract(vote_type)
-    voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+    voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
     vote_data = voting_contract.getVote(vote_id)
 
     return {
@@ -121,9 +127,6 @@ def decode_vote_script(script):
 
     votes = []
     while idx < len(script):
-
-        boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
-
         # can just replace ape.Contract(...) with boa.from_etherscan(script[idx : idx + 20], name="target")
         # works; get target contract address
         target = script[idx : idx + 20]
@@ -131,8 +134,7 @@ def decode_vote_script(script):
         target = "0x" + target
         idx += 20
 
-        boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
-        voting_contract = boa.from_etherscan(target, name="test", api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+        voting_contract = boa.from_etherscan(target, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
 
         length = int(script[idx : idx + 4].hex(), 16)
         idx += 4

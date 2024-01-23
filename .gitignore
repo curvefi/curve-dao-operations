@@ -28,3 +28,5 @@ curve_dao.egg-info/
 # vim
 *.swp
 *.swo
+
+.env

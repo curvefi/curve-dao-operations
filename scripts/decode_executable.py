@@ -2,6 +2,10 @@ import sys
 import warnings
 import click
 from rich.console import Console as RichConsole
+import os
+from dotenv import load_dotenv
+
+import boa
 
 # need to find a way how to query events
 from curve_dao.ipfs import get_description_from_vote_id
@@ -13,6 +17,8 @@ from curve_dao.vote_utils import (
     get_vote_data,
     get_vote_script,
 )
+
+load_dotenv()
 
 warnings.filterwarnings("ignore")
 
@@ -54,6 +60,8 @@ def decode(vote_type: str, vote_id: int):
 
     Decoding with: $ python3 scripts/decode_executable.py --vote-type ownership --vote-id 100
     """
+
+    boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
 
     RICH_CONSOLE.log(f"Decoding {vote_type} VoteID: {vote_id}")
 
