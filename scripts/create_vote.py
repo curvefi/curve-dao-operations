@@ -51,8 +51,10 @@ def create_vote(
     evm_script = prepare_vote_script(target, actions)
     RICH_CONSOLE.log(f"EVM script: {evm_script}")
 
-    # ipfs hash
+    # gateway for pinata is https://gateway.pinata.cloud/ipfs/{ipfs_hash}
     ipfs_hash = get_ipfs_hash_from_description(description)
+
+    RICH_CONSOLE.log(f"ipfs hash: {ipfs_hash}")
 
     # actual transcation
     with boa.env.prank(vote_creator):
