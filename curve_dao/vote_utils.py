@@ -75,18 +75,12 @@ def get_function_input_types(abi, fn_name):
     return None
 
 
-def keccak256(data):
-    k = sha3.keccak_256()
-    k.update(data)
-    return k.digest()
-
-
 def encode_function_call(fn_name, arg_types, args):
-    # create function signature
     fn_signature = f"{fn_name}({','.join(arg_types)})"
-    method_id = keccak256(fn_signature.encode())[:4]
 
-    # encode parameters
+    method_id_hex = boa.eval(f"keccak256('{fn_signature}')").hex()
+    method_id = bytes.fromhex(method_id_hex[:8])
+
     encoded_params = eth_abi.encode(arg_types, args)
 
     calldata = method_id + encoded_params
