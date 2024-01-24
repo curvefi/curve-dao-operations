@@ -11,19 +11,26 @@ from .addresses import get_dao_voting_contract
 def get_ipfs_hash_from_description(description: str):
     """Uploads vote description to IPFS and returns the IPFS hash.
 
-    NOTE: needs environment variables for infura IPFS access. Please
-    set up an IPFS project to generate project id and project secret!
+    NOTE: needs environment variables for pinata IPFS access. Please
+    set up an IPFS project to generate api key and api secret!
+    https://www.pinata.cloud/
     """
-    text = json.dumps({"text": description})
+
+    headers = {
+            "pinata_api_key": os.getenv("PINATA_API_KEY"),
+            "pinata_secret_api_key": os.getenv("PINATA_API_SECRET")
+        }
+
     response = requests.post(
-        "https://ipfs.infura.io:5001/api/v0/add",
-        files={"file": text},
-        auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
+        "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+        json={"pinataContent": {"text": description}},
+        headers=headers
     )
+
     assert (
         200 <= response.status_code < 400
     ), f"POST to IPFS failed: {response.status_code}"
-    return response.json()["Hash"]
+    return response.json()["IpfsHash"]
 
 
 def get_description_from_ipfs_hash(ipfs_hash: str):
@@ -61,10 +68,10 @@ def get_ipfs_hash_from_vote_id(vote_type, vote_id):
     # voting_contract = ape.project.Voting.at(voting_contract_address)
     #voting = "contracts/Voting.json"
 
-    boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
+    boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
 
     voting_contract_address = get_dao_voting_contract(vote_type)
-    voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key="1AEX68NAS526VVAXHFW5PGP78PAXDTWHQU")
+    voting_contract = boa.from_etherscan(voting_contract_address, name="VotingContract", api_key=os.getenv('ETHERSCAN_API_KEY'))
 
     # can't do ["snapshotBlock"], need to do [3] instead
     snapshot_block = voting_contract.getVote(vote_id)[3]
