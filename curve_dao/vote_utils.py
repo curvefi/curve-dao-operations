@@ -5,6 +5,8 @@ import sys
 from rich.console import Console as RichConsole
 import os
 from dotenv import load_dotenv
+import sha3
+import eth_abi
 
 import boa
 
@@ -14,7 +16,7 @@ from .ipfs import get_ipfs_hash_from_description
 
 warnings.filterwarnings("ignore")
 
-logger = RichConsole(file=sys.stdout)
+RICH_CONSOLE = RichConsole(file=sys.stdout)
 
 load_dotenv()
 
@@ -33,66 +35,68 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
     Returns:
         str: Generated EVM script.
     """
-    """agent = ape.Contract(target["agent"])
+
+    boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
+
+    agent = boa.from_etherscan(target["agent"], name="agent", api_key=os.getenv('ETHERSCAN_API_KEY'))
     voting = target["voting"]
 
-    logger.info(f"Agent Contract: {agent.address}")
-    logger.info(f"Voting Contract: {voting}")
+    RICH_CONSOLE.log(f"Agent Contract: {agent.address}")
+    RICH_CONSOLE.log(f"Voting Contract: {voting}")
 
     evm_script = bytes.fromhex("00000001")
 
     for address, fn_name, *args in actions:
-        contract = ape.Contract(address)
-        fn = getattr(contract, fn_name)
-        calldata = bytes(fn.encode_input(*args))
-        agent_calldata = bytes(agent.execute.encode_input(address, 0, calldata))
+        contract_abi = boa.from_etherscan_abi(address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
+        input_types = get_function_input_types(contract_abi, fn_name)
+
+        # generate calldata
+        calldata = bytes(encode_function_call(fn_name, input_types, args))
+
+        # generate agent calldata
+        agent_calldata = bytes(encode_function_call("execute", ["address", "uint256", "bytes"], [address, 0, calldata]))
+
         length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
+
         evm_script = (
             evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
         )
 
-    return evm_script"""
+    return evm_script
 
 
-# not working
-def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator: str):
-    """Prepares EVM script and creates an on-chain AragonDAO vote.
-
-    Args:
-        target (dict): ownership / parameter / emergency
-        actions (list(tuple)): ("target addr", "fn_name", *args)
-        vote_creator (str): msg.sender address
-        description (str): Description of the on-chain governance proposal
-
-    Returns:
-        str: vote ID of the created vote.
-    """
+# fetch abi for the function input types. this is a workaround, can be done much easier
+def get_function_input_types(abi, fn_name):
+    for item in abi:
+        if item['type'] == 'function' and item['name'] == fn_name:
+            # Extract the input types
+            input_types = [input['type'] for input in item['inputs']]
+            return input_types
+    return None
 
 
+def keccak256(data):
+    k = sha3.keccak_256()
+    k.update(data)
+    return k.digest()
 
-    """aragon = ape.project.Voting.at(target["voting"])
-    assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
-    evm_script = prepare_vote_script(target, actions)
-    logger.info(f"EVM script: {evm_script}")
+def encode_function_call(fn_name, arg_types, args):
+    # create function signature
+    fn_signature = f"{fn_name}({','.join(arg_types)})"
+    method_id = keccak256(fn_signature.encode())[:4]
 
-    ipfs_hash = get_ipfs_hash_from_description(description)
-    tx = aragon.newVote(
-        evm_script,
-        f"ipfs:{ipfs_hash}",
-        False,
-        False,
-        sender=vote_creator,
-    )
+    # encode parameters
+    encoded_params = eth_abi.encode(arg_types, args)
 
-    return tx"""
+    calldata = method_id + encoded_params
+    return calldata
 
 
 # working.
-def get_vote_script(vote_id: str, vote_type: str) -> str:
+def get_vote_script(vote_id: int, vote_type: str) -> str:
     
     try:
-        boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
         voting_contract_address = get_dao_voting_contract(vote_type)
         voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
         vote = voting_contract.getVote(vote_id)
@@ -284,3 +288,6 @@ def format_fn_inputs(inputs_with_names):
     name, arg = inputs_with_names[-1]
     formatted_args += f"    └─ [bold]{name}[/]: [yellow]{arg}[/]"
     return formatted_args
+
+
+
