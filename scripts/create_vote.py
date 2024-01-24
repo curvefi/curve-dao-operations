@@ -9,12 +9,7 @@ from boa.network import NetworkEnv
 import boa
 
 from curve_dao.vote_utils import prepare_vote_script
-
-# need to find a way how to query events
-#from curve_dao.ipfs import (
-#    get_description_from_vote_id,
-#    get_ipfs_hash_from_description
-#)
+from curve_dao.ipfs import get_ipfs_hash_from_description
 
 load_dotenv()
 
@@ -43,28 +38,23 @@ def create_vote(
 
     boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
 
-    # for now we only simulate the vote. later we add option to actually deploy?
-    RICH_CONSOLE.log("Simulating the vote on a fork:")
+    RICH_CONSOLE.log("Creating a DAO vote:")
 
 
     # get contract instance of the voting ownership of the target address.
-    # target is either ownership, parameter or emergency 
     aragon = boa.load_abi("contracts/aragon_interfaces/Voting.json", name="Aragon")
     aragon = aragon.at(target["voting"])
 
-    # we check if vote creator can actually create a vote, otherwise the tx will jsut revert
     assert aragon.canCreateNewVote(vote_creator), "user cannot create a new vote"
 
-    # now we need a evm script
+    # evm script
     evm_script = prepare_vote_script(target, actions)
     RICH_CONSOLE.log(f"EVM script: {evm_script}")
 
-    # now we grab the ipfs_hash
-    #ipfs_hash = get_ipfs_hash_from_description(description)
-    ipfs_hash = "test"
+    # ipfs hash
+    ipfs_hash = get_ipfs_hash_from_description(description)
 
-    # now we actually do the tx
-
+    # actual transcation
     with boa.env.prank(vote_creator):
         tx = aragon.newVote(
             evm_script,

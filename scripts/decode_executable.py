@@ -7,9 +7,7 @@ from dotenv import load_dotenv
 
 import boa
 
-# need to find a way how to query events
 from curve_dao.ipfs import get_description_from_vote_id
-
 from curve_dao.vote_utils import (
     MissingVote,
     decode_vote_data,
@@ -65,6 +63,7 @@ def decode(vote_type: str, vote_id: int):
 
     RICH_CONSOLE.log(f"Decoding {vote_type} VoteID: {vote_id}")
 
+    # fetching vote script
     try:
         script = get_vote_script(vote_id, vote_type)
     except MissingVote:
@@ -77,6 +76,7 @@ def decode(vote_type: str, vote_id: int):
     try:
         description = get_description_from_vote_id(vote_id, vote_type)
         RICH_CONSOLE.log(description)
+    # too broad of an exception.
     except:
         pass
 

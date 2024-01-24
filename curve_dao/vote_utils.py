@@ -24,7 +24,6 @@ class MissingVote(Exception):
     """Exception raised when a vote ID is invalid."""
 
 
-# not working
 def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
     """Generates EVM script to be executed by AragonDAO contracts.
 
@@ -55,7 +54,7 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
 
         # generate agent calldata
         agent_calldata = bytes(encode_function_call("execute", ["address", "uint256", "bytes"], [address, 0, calldata]))
-
+        
         length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
 
         evm_script = (
@@ -69,7 +68,6 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
 def get_function_input_types(abi, fn_name):
     for item in abi:
         if item['type'] == 'function' and item['name'] == fn_name:
-            # Extract the input types
             input_types = [input['type'] for input in item['inputs']]
             return input_types
     return None
@@ -87,7 +85,6 @@ def encode_function_call(fn_name, arg_types, args):
     return calldata
 
 
-# working.
 def get_vote_script(vote_id: int, vote_type: str) -> str:
     
     try:
@@ -101,8 +98,6 @@ def get_vote_script(vote_id: int, vote_type: str) -> str:
         raise MissingVote(f"Could not grab vote script: {e}")
 
 
-
-# working
 def get_vote_data(vote_id: str, vote_type: str) -> str:
 
     voting_contract_address = get_dao_voting_contract(vote_type)
@@ -119,14 +114,11 @@ def get_vote_data(vote_id: str, vote_type: str) -> str:
     }
 
 
-# working 
 def decode_vote_script(script):
     idx = 4
 
     votes = []
     while idx < len(script):
-        # can just replace ape.Contract(...) with boa.from_etherscan(script[idx : idx + 20], name="target")
-        # works; get target contract address
         target = script[idx : idx + 20]
         target = target.hex()
         target = "0x" + target
@@ -137,22 +129,16 @@ def decode_vote_script(script):
         length = int(script[idx : idx + 4].hex(), 16)
         idx += 4
 
-        # get calldata to execute for the dao:
         calldata = script[idx : idx + length]
         idx += length
 
-        # target and calldata matching
-        # fix decode input
         fn, inputs = decode_input(target, calldata)
         agent = None
 
-        # print decoded vote:
-        # target is either target_addr or target_contract. idk... yet...
         if "0x" + str(calldata[:4].hex()) == "0xb61d27f6":
             agent = target
             target = inputs[0]
 
-            # decode_input does not work here because we need to fetch the abi of the target contract.
             fn, inputs = decode_input(target, inputs[2])
             inputs_with_names = get_inputs_with_names(fn, inputs)
             formatted_inputs = format_fn_inputs(inputs_with_names)
@@ -185,7 +171,6 @@ def decode_vote_script(script):
     return votes
 
 
-# works
 def decode_vote_data(data: dict, vote_type: str):
     yes = round(data["yea"] / 1e18, 2)
     no = round(data["nay"] / 1e18, 2)
