@@ -1,3 +1,0 @@
-eth-ape[recommended-plugins]==0.6.2
-requests
-black==22.12.0
