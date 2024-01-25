@@ -117,7 +117,7 @@ def decode_input(target: str, calldata: bytes
 
     fn_selector = calldata[:4].hex()  # type: ignore
     
-    abi = boa.from_etherscan_abi(target, api_key=os.getenv('ETHERSCAN_API_KEY'))
+    abi = boa.from_etherscan_abi(target, name="TargetContract", api_key=os.getenv('ETHERSCAN_API_KEY'))
 
     abi = next( 
         (

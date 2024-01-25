@@ -35,18 +35,16 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
         str: Generated EVM script.
     """
 
-    boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv('ALCHEMY_API_KEY')}")
+    aragon_agent = boa.load_abi("contracts/aragon_interfaces/Agent.json", name="AragonAgent")
+    aragon_agent = aragon_agent.at(target["agent"])
 
-    agent = boa.from_etherscan(target["agent"], name="agent", api_key=os.getenv('ETHERSCAN_API_KEY'))
-    voting = target["voting"]
-
-    RICH_CONSOLE.log(f"Agent Contract: {agent.address}")
-    RICH_CONSOLE.log(f"Voting Contract: {voting}")
+    RICH_CONSOLE.log(f"Agent Contract: {aragon_agent.address}")
+    RICH_CONSOLE.log(f"Voting Contract: {target["voting"]}")
 
     evm_script = bytes.fromhex("00000001")
 
     for address, fn_name, *args in actions:
-        contract_abi = boa.from_etherscan_abi(address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
+        contract_abi = boa.from_etherscan_abi(address, name="TargetContract", api_key=os.getenv('ETHERSCAN_API_KEY'))
         input_types = get_function_input_types(contract_abi, fn_name)
 
         # generate calldata
@@ -58,7 +56,7 @@ def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
         length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
 
         evm_script = (
-            evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
+            evm_script + bytes.fromhex(aragon_agent.address[2:]) + length + agent_calldata
         )
 
     return evm_script
@@ -89,7 +87,8 @@ def get_vote_script(vote_id: int, vote_type: str) -> str:
     
     try:
         voting_contract_address = get_dao_voting_contract(vote_type)
-        voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
+        voting_contract = boa.load_abi("contracts/aragon_interfaces/Voting.json", name="AragonVoting")
+        voting_contract = voting_contract.at(voting_contract_address)
         vote = voting_contract.getVote(vote_id)
         script = vote[9]
         return script
@@ -101,7 +100,8 @@ def get_vote_script(vote_id: int, vote_type: str) -> str:
 def get_vote_data(vote_id: str, vote_type: str) -> str:
 
     voting_contract_address = get_dao_voting_contract(vote_type)
-    voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
+    voting_contract = boa.load_abi("contracts/aragon_interfaces/Voting.json", name="AragonVoting")
+    voting_contract = voting_contract.at(voting_contract_address)
     vote_data = voting_contract.getVote(vote_id)
 
     return {
@@ -124,7 +124,7 @@ def decode_vote_script(script):
         target = "0x" + target
         idx += 20
 
-        voting_contract = boa.from_etherscan(target, name="test", api_key=os.getenv('ETHERSCAN_API_KEY'))
+        voting_contract = boa.from_etherscan(target, name="TargetContract", api_key=os.getenv('ETHERSCAN_API_KEY'))
 
         length = int(script[idx : idx + 4].hex(), 16)
         idx += 4
