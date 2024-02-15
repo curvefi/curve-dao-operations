@@ -25,33 +25,19 @@ def get_ipfs_hash_from_description(description: str):
     return response.json()["Hash"]
 
 
-def get_description_from_ipfs_hash(ipfs_hash: str):
+def get_description_from_ipfs_hash(ipfs_hash: str) -> str:
     try:
-        response = requests.post(
-            f"https://ipfs.infura.io:5001/api/v0/get?arg={ipfs_hash}",
-            auth=(os.getenv("IPFS_PROJECT_ID"), os.getenv("IPFS_PROJECT_SECRET")),
-            timeout=5,
-        )
+        url = f"https://ipfs.io/ipfs/{ipfs_hash}"
+        response = requests.get(url, timeout=5)
         response.raise_for_status()
+        data = response.json()
+        return data.get("text", "Text field not found")
     except requests.Timeout:
-        return "IPFS timed out.  Possibly the description is no longer pinned."
+        return "IPFS timed out. Possibly the description is no longer pinned."
     except requests.ConnectionError as e:
         return f"IPFS connection error: {e}"
     except requests.HTTPError as e:
         return f"IPFS request error: {e}"
-
-    response_string = response.content.decode("utf-8")
-    json_string = []
-    in_json = False
-    for c in response_string:
-        if c == "{":
-            in_json = True
-        if in_json:
-            json_string.append(c)
-        if c == "}":
-            break
-    json_string = "".join(json_string)
-    return json.loads(json_string)
 
 
 def get_ipfs_hash_from_vote_id(vote_type, vote_id):
