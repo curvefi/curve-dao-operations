@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 import ape
-from ape.exceptions import ContractLogicError
+from ape.exceptions import ContractLogicError, SignatureError, VirtualMachineError
 from ape.logging import logger
 
 from .addresses import get_dao_voting_contract
@@ -15,6 +15,18 @@ warnings.filterwarnings("ignore")
 
 class MissingVote(Exception):
     """Exception raised when a vote ID is invalid."""
+
+
+class EVMCallsReverted(Exception):
+    """Exception raised when EVM calls revert."""
+
+
+class NoSigner(Exception):
+    """Exception raised when transaction has no signer."""
+
+
+class NoFunds(Exception):
+    """Exception raised when the signer does not have enough funds to execute the transaction."""
 
 
 def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
@@ -76,6 +88,37 @@ def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator
     )
 
     return tx
+
+
+def get_execution_status(vote_id, vote_type):
+    voting_contract_address = get_dao_voting_contract(vote_type)
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+
+    status = voting_contract.canExecute(vote_id)
+    return status
+
+
+def execute(vote_id, vote_type):
+    voting_contract_address = get_dao_voting_contract(vote_type)
+    voting_contract = ape.project.Voting.at(voting_contract_address)
+
+    try:
+        voting_contract.executeVote(vote_id)
+    except SignatureError as e:
+        if "The transaction was not signed." in str(e):
+            raise NoSigner("No signer.")
+        else:
+            raise
+    except ContractLogicError as e:
+        if "EVMCALLS_CALL_REVERTED" in str(e):
+            raise EVMCallsReverted("Function call reverted.")
+        else:
+            raise
+    except VirtualMachineError as e:
+        if "sender doesn't have enough funds" in str(e):
+            raise NoFunds("Not enough funds.")
+        else:
+            raise
 
 
 def get_vote_script(vote_id: str, vote_type: str) -> str:
