@@ -6,8 +6,13 @@ import click
 from ape.cli import get_user_selected_account
 from rich.console import Console as RichConsole
 
-from curve_dao.vote_utils import get_execution_status, execute, NoSigner, EVMCallsReverted, NoFunds
-
+from curve_dao.vote_utils import (
+    EVMCallsReverted,
+    NoFunds,
+    NoSigner,
+    execute,
+    get_execution_status,
+)
 
 warnings.filterwarnings("ignore")
 
@@ -50,14 +55,16 @@ def execute_vote(network, vote_type: str, vote_id: int, simulate: bool):
     - simulate: Whether to simulate the transaction or not. Default is to simulate.
     """
 
-    executable_status = get_execution_status(vote_id, vote_type) 
+    executable_status = get_execution_status(vote_id, vote_type)
 
     if executable_status:
 
         try:
 
             if not simulate:
-                RICH_CONSOLE.log(f"Executing {vote_type} VoteID: {vote_id}", style="bold")
+                RICH_CONSOLE.log(
+                    f"Executing {vote_type} VoteID: {vote_id}", style="bold"
+                )
 
                 account = get_user_selected_account("Select account to use")
                 RICH_CONSOLE.log(f"You selected {account.address}.")
@@ -68,22 +75,29 @@ def execute_vote(network, vote_type: str, vote_id: int, simulate: bool):
                 RICH_CONSOLE.log("Vote successfully executed.", style="green")
 
             else:
-                RICH_CONSOLE.log(f"Simulating the execution of {vote_type} VoteID: {vote_id}", style="bold")
+                RICH_CONSOLE.log(
+                    f"Simulating the execution of {vote_type} VoteID: {vote_id}",
+                    style="bold",
+                )
 
-                with ape.accounts.use_sender("0x0000000000000000000000000000000000000000"):
+                with ape.accounts.use_sender(
+                    "0x0000000000000000000000000000000000000000"
+                ):
                     execute(vote_id, vote_type)
 
                 RICH_CONSOLE.log("Vote successfully simulated.", style="green")
 
-
         except NoSigner:
-            RICH_CONSOLE.log(f"Error: The transaction was not signed", style="red")
+            RICH_CONSOLE.log("Error: The transaction was not signed", style="red")
 
         except EVMCallsReverted:
-            RICH_CONSOLE.log(f"Error: The function call was reverted.", style="red")
+            RICH_CONSOLE.log("Error: The function call was reverted.", style="red")
 
         except NoFunds:
-            RICH_CONSOLE.log(f"Error: The signer does not have enough funds to execute the transaction.", style="red")
+            RICH_CONSOLE.log(
+                "Error: The signer does not have enough funds to execute the transaction.",
+                style="red",
+            )
 
     else:
-        RICH_CONSOLE.log(f"Vote can not be executed.", style="red")
+        RICH_CONSOLE.log("Vote can not be executed.", style="red")
