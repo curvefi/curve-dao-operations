@@ -71,19 +71,20 @@ Currently, the DAO operations tool grants the following:
 
 This is a read-only tool that allows access to all users (they don't need to be a Curve Finance stakeholder) to decode an on-chain proposal.
 
-Input args:
+| Input       | Type   | Description                                |
+| ----------- | ------ | ------------------------------------------ |
+| `vote_type` | `str`  | The type of vote (ownership or parameter). |
+| `vote_id`   | `int`  | The vote ID of an on-chain proposal.       |
 
-1. `vote_id`: The vote ID of an on-chain proposal
+An example of its usage is showed in the following:
 
-An example of its usage is show in the following:
-
-```
+```shell
 $ ape run decode_executable decode --vote-type ownership --vote-id 223
 ```
 
 Output:
 
-```
+```shell
 Decoding VoteID: 223
 Voting contract: 0xe478de485ad2fe566d49342cbd03e49ed7db3356 (ownership)
 Call via agent: 0x40907540d8a6C65c637785e8f8B742ae6b0b9968
@@ -115,6 +116,26 @@ Results: Vote Passed (Execution Status: Executed)
 ├─ Support: 100.0% (Required: 51%)
 └─ Quorum: 49.25% (Minimum: 30%)
 ```
+
+
+#### `execute_vote`
+
+This tool allows users to execute passed Curve DAO votes. A guide on adding an account to sign transactions using Ape can be found [here](https://docs.apeworx.io/ape/stable/userguides/accounts.html#live-network-accounts).
+
+
+| Input       | Type   | Description                                |
+| ----------- | ------ | ------------------------------------------ |
+| `vote_type` | `str`  | The type of vote (ownership or parameter). |
+| `vote_id`   | `int`  | The vote ID of an on-chain proposal.       |
+| `simulate`  | `bool` | Whether to simulate the execution or not. This input is optional; if no input is given, it defaults to `True`. |
+
+
+An example of its usage is showed in the following:
+
+```shell
+$ ape run execute_vote execute --vote-type ownership --vote-id 515 --simulate True
+```
+
 
 # How to contribute:
 
