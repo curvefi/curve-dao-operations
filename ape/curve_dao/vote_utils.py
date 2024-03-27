@@ -1,11 +1,10 @@
 import warnings
 from datetime import datetime
 from typing import Dict, List, Tuple
-import sys
-import os
-from rich.console import Console as RichConsole
 
-import boa
+import ape
+from ape.exceptions import ContractLogicError
+from ape.logging import logger
 
 from .addresses import get_dao_voting_contract
 from .decoder_utils import decode_input
@@ -13,13 +12,43 @@ from .ipfs import get_ipfs_hash_from_description
 
 warnings.filterwarnings("ignore")
 
-logger = RichConsole(file=sys.stdout)
 
 class MissingVote(Exception):
     """Exception raised when a vote ID is invalid."""
 
 
-def get_evm_script(target, actions):
+def prepare_vote_script(target: Dict, actions: List[Tuple]) -> str:
+    """Generates EVM script to be executed by AragonDAO contracts.
+
+    Args:
+        target (dict): CURVE_DAO_OWNERSHIP / CURVE_DAO_PARAMS / EMERGENCY_DAO
+        actions (list(tuple)): ("target addr", "fn_name", *args)
+
+    Returns:
+        str: Generated EVM script.
+    """
+    agent = ape.Contract(target["agent"])
+    voting = target["voting"]
+
+    logger.info(f"Agent Contract: {agent.address}")
+    logger.info(f"Voting Contract: {voting}")
+
+    evm_script = bytes.fromhex("00000001")
+
+    for address, fn_name, *args in actions:
+        contract = ape.Contract(address)
+        fn = getattr(contract, fn_name)
+        calldata = bytes(fn.encode_input(*args))
+        agent_calldata = bytes(agent.execute.encode_input(address, 0, calldata))
+        length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
+        evm_script = (
+            evm_script + bytes.fromhex(agent.address[2:]) + length + agent_calldata
+        )
+
+    return evm_script
+
+
+def make_vote(target: Dict, actions: List[Tuple], description: str, vote_creator: str):
     """Prepares EVM script and creates an on-chain AragonDAO vote.
 
     Args:
@@ -31,125 +60,84 @@ def get_evm_script(target, actions):
     Returns:
         str: vote ID of the created vote.
     """
+    aragon = ape.project.Voting.at(target["voting"])
+    assert aragon.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
 
-    aragon_voting = boa.from_etherscan(target["voting"], name="AragonVoting", api_key=os.getenv("ETHERSCAN_API_KEY"))
+    evm_script = prepare_vote_script(target, actions)
+    logger.info(f"EVM script: {evm_script}")
 
-    #vote_creator = boa.env.eoa
-    #assert aragon_voting.canCreateNewVote(vote_creator), "dev: user cannot create new vote"
+    ipfs_hash = get_ipfs_hash_from_description(description)
+    tx = aragon.newVote(
+        evm_script,
+        f"ipfs:{ipfs_hash}",
+        False,
+        False,
+        sender=vote_creator,
+    )
 
-    evm_script = prepare_evm_script(target, actions)
-    return evm_script
-
-
-
-def prepare_evm_script(target: Dict, actions: List[Tuple]):
-    """Generates EVM script to be executed by AragonDAO contracts.
-
-    Args:
-        target (dict): CURVE_DAO_OWNERSHIP / CURVE_DAO_PARAMS / EMERGENCY_DAO
-        actions (list(tuple)): ("target addr", "fn_name", *args)
-
-    Returns:
-        str: Generated EVM script.
-    """
-    aragon_agent = boa.from_etherscan(target["agent"], name="AragonAgent", api_key=os.getenv("ETHERSCAN_API_KEY"))
-    aragon_voting = boa.from_etherscan(target["voting"], name="AragonVoting", api_key=os.getenv("ETHERSCAN_API_KEY"))
-
-    evm_script = bytes.fromhex("00000001")
-
-    for action in actions:
-        address, fn_name, *args = action
-        contract = boa.from_etherscan(address=address, name="TargetContract", api_key=os.getenv("ETHERSCAN_API_KEY"))
-        contract_function = getattr(contract, fn_name)
-        
-        calldata = contract_function.prepare_calldata(*args)
-        agent_calldata = aragon_agent.execute.prepare_calldata(address, 0, calldata)
-        
-        length = bytes.fromhex(hex(len(agent_calldata.hex()) // 2)[2:].zfill(8))
-        evm_script = evm_script + bytes.fromhex(aragon_agent.address[2:]) + length + agent_calldata
+    return tx
 
 
-    return evm_script
-
-
-# working.
 def get_vote_script(vote_id: str, vote_type: str) -> str:
-    
     try:
-        boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv("ALCHEMY_API_KEY")}")
         voting_contract_address = get_dao_voting_contract(vote_type)
-        voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv("ETHERSCAN_API_KEY"))
+        voting_contract = ape.project.Voting.at(voting_contract_address)
         vote = voting_contract.getVote(vote_id)
-        script = vote[9]
+        script = vote["script"]
         return script
-    # to borad of an exception. what to do here?
-    except Exception as e:
-        raise MissingVote(f"Could not grab vote script: {e}")
+    except ContractLogicError as e:
+        if "VOTING_NO_VOTE" in str(e):
+            raise MissingVote(f"Vote ID {vote_id} not found")
+        else:
+            raise
 
 
-
-# working
 def get_vote_data(vote_id: str, vote_type: str) -> str:
-
-    boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv("ALCHEMY_API_KEY")}")
     voting_contract_address = get_dao_voting_contract(vote_type)
-    voting_contract = boa.from_etherscan(voting_contract_address, name="test", api_key=os.getenv("ETHERSCAN_API_KEY"))
+    voting_contract = ape.project.Voting.at(voting_contract_address)
     vote_data = voting_contract.getVote(vote_id)
 
     return {
-        "yea": vote_data[6],
-        "nay": vote_data[7],
-        "votingPower": vote_data[8],
-        "open": vote_data[0],
-        "executed": vote_data[1],
-        "startDate": vote_data[2],
+        "yea": vote_data["yea"],
+        "nay": vote_data["nay"],
+        "votingPower": vote_data["votingPower"],
+        "open": vote_data["open"],
+        "executed": vote_data["executed"],
+        "startDate": vote_data["startDate"],
     }
 
 
-# working 
 def decode_vote_script(script):
     idx = 4
 
     votes = []
     while idx < len(script):
 
-        boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv("ALCHEMY_API_KEY")}")
-
-        # can just replace ape.Contract(...) with boa.from_etherscan(script[idx : idx + 20], name="target")
-        # works; get target contract address
-        target = script[idx : idx + 20]
-        target = target.hex()
-        target = "0x" + target
+        # get target contract address:
+        target = ape.Contract(script[idx : idx + 20])
         idx += 20
 
-        boa.env.fork("https://eth-mainnet.g.alchemy.com/v2/plo7qLFX6AtZLU6Nk5Fl8TREW8qPq8S2")
-        voting_contract = boa.from_etherscan(target, name="test", api_key=os.getenv("ETHERSCAN_API_KEY"))
         length = int(script[idx : idx + 4].hex(), 16)
         idx += 4
 
-        # get calldata to execute for the dao:
+        # calldata to execute for the dao:
         calldata = script[idx : idx + length]
         idx += length
 
-        # target and calldata matching
-        # fix decode input
         fn, inputs = decode_input(target, calldata)
         agent = None
 
         # print decoded vote:
-        # target is either target_addr or target_contract. idk... yet...
-        if "0x" + str(calldata[:4].hex()) == "0xb61d27f6":
+        if calldata[:4].hex() == "0xb61d27f6":
             agent = target
-            target = inputs[0]
-
-            # decode_input does not work here because we need to fetch the abi of the target contract.
+            target = ape.Contract(inputs[0])
             fn, inputs = decode_input(target, inputs[2])
             inputs_with_names = get_inputs_with_names(fn, inputs)
             formatted_inputs = format_fn_inputs(inputs_with_names)
             formatted_output = (
                 f"Call via agent: [yellow]{agent}[/]\n"
                 f" ├─ [bold]To[/]: [green]{target}[/]\n"
-                f" ├─ [bold]Function[/]: [yellow]{fn["name"]}[/]\n"
+                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
                 f" └─ [bold]Inputs[/]: \n{formatted_inputs}\n"
             )
         else:
@@ -158,24 +146,22 @@ def decode_vote_script(script):
             formatted_output = (
                 f"Direct call\n "
                 f" ├─ [bold]To[/]: [green]{target}[/]\n"
-                f" ├─ [bold]Function[/]: [yellow]{fn["name"]}[/]\n"
+                f" ├─ [bold]Function[/]: [yellow]{fn.name}[/]\n"
                 f" └─ [bold]Inputs[/]: {formatted_inputs}\n"
             )
 
         vote = {
-            "agent": agent if agent else None,
-            "target": target,
-            "function": fn["name"],
+            "agent": agent.address if agent else None,
+            "target": target.address,
+            "function": fn.name,
             "inputs": inputs_with_names,
             "formatted_output": formatted_output,
         }
-
         votes.append(vote)
 
     return votes
 
 
-# works
 def decode_vote_data(data: dict, vote_type: str):
     yes = round(data["yea"] / 1e18, 2)
     no = round(data["nay"] / 1e18, 2)
@@ -248,11 +234,10 @@ def decode_vote_data(data: dict, vote_type: str):
     return results
 
 
-
 def get_inputs_with_names(abi, inputs):
     arg_names = []
     for i in range(len(inputs)):
-        argname = abi["inputs"][i]["name"]
+        argname = abi.inputs[i].name
         arg_names.append(argname)
 
     inputs_with_names = list(zip(arg_names, inputs))

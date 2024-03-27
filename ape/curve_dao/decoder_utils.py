@@ -1,10 +1,13 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import boa
-import os
-from hexbytes import HexBytes
+import ape
+from ape.exceptions import DecodingError
+from ape.utils.abi import Struct
+from eth_abi.exceptions import InsufficientDataBytes
 from eth_hash.auto import keccak
 from eth_utils import humanize_hash, is_hex_address, to_checksum_address
+from ethpm_types import HexBytes
+from ethpm_types.abi import MethodABI
 
 try:
     from eth_abi import decode_abi
@@ -18,12 +21,12 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
         substitutions = {}
 
     for i in abi_params:
-        if i["type"].startswith("tuple"):
+        if i.type.startswith("tuple"):
             params = get_type_strings(i.components, substitutions)
-            array_size = i["type"][5:]
+            array_size = i.type[5:]
             types_list.append(f"({','.join(params)}){array_size}")
         else:
-            type_str = i["type"]
+            type_str = i.type
             for orig, sub in substitutions.items():
                 if type_str.startswith(orig):
                     type_str = type_str.replace(orig, sub)
@@ -33,8 +36,8 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
 
 
 def build_function_signature(abi: Dict) -> str:
-    types_list = get_type_strings(abi["inputs"])
-    return f"{abi["name"]}({','.join(types_list)})"
+    types_list = get_type_strings(abi.inputs)
+    return f"{abi.name}({','.join(types_list)})"
 
 
 def build_function_selector(abi: Dict) -> str:
@@ -44,21 +47,18 @@ def build_function_selector(abi: Dict) -> str:
 
 def decode_address(raw_address):
     if isinstance(raw_address, int):
-        raw_address = hex(raw_address)
+        raw_address = HexBytes(raw_address)
 
     return to_checksum_address(raw_address)
 
 
-# todo: how to fix struct
 def decode_value(value):
-
     if isinstance(value, HexBytes):
         try:
             string_value = value.strip(b"\x00").decode("utf8")
             return f"'{string_value}'"
-        
-        # hmmm, except to broad. what to do here?
-        except:
+        except UnicodeDecodeError:
+            # Truncate bytes if very long.
             if len(value) > 24:
                 return humanize_hash(value)
 
@@ -72,56 +72,51 @@ def decode_value(value):
         return decode_address(value)
 
     elif value and isinstance(value, str):
+        # Surround non-address strings with quotes.
         return f'"{value}"'
 
     elif isinstance(value, (list, tuple)):
         decoded_values = [decode_value(v) for v in value]
         return decoded_values
 
-    """elif isinstance(value, Struct):
+    elif isinstance(value, Struct):
         decoded_values = {k: decode_value(v) for k, v in value.items()}
-        return decoded_values"""
+        return decoded_values
 
     return value
 
 
 def decode_calldata(
-    abi,
+    method: MethodABI,
     raw_data: bytes,
 ) -> List:
-
-    input_types = [i["type"] for i in abi["inputs"]]  # type: ignore
+    input_types = [i.canonical_type for i in method.inputs]  # type: ignore
 
     try:
-        raw_input_values = decode_abi(input_types, raw_data)
 
+        raw_input_values = decode_abi(input_types, raw_data)
         input_values = [decode_value(v) for v in raw_input_values]
 
-    # too broad of an exception probably?
-    except:
+    except (DecodingError, InsufficientDataBytes):
+
         input_values = ["<?>" for _ in input_types]
 
     return input_values
 
 
-
-# works
-def decode_input(target: str, calldata: bytes
+def decode_input(
+    contract: ape.Contract, calldata: Union[str, bytes]
 ) -> Tuple[str, Any]:
 
     if not isinstance(calldata, HexBytes):
         calldata = HexBytes(calldata)
 
     fn_selector = calldata[:4].hex()  # type: ignore
-    
-    boa.env.fork(f"https://eth-mainnet.g.alchemy.com/v2/{os.getenv("ALCHEMY_API_KEY")}")
-    abi = boa.from_etherscan_abi(target, api_key=os.getenv("ETHERSCAN_API_KEY"))
-
-    abi = next( 
+    abi = next(
         (
             i
-            for i in abi
-            if i["type"] == "function" and build_function_selector(i) == fn_selector
+            for i in contract.contract_type.abi
+            if i.type == "function" and build_function_selector(i) == fn_selector
         ),
         None,
     )
