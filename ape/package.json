@@ -1,5 +1,5 @@
 {
   "devDependencies": {
-    "hardhat": "^2.17.1"
+    "hardhat": "^3.17.0"
   }
 }
